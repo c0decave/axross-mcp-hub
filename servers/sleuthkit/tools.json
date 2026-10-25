@@ -1,0 +1,11 @@
+{
+  "tools": [
+    "extract_file",
+    "file_metadata",
+    "filesystem_info",
+    "list_files",
+    "partitions",
+    "read_file",
+    "timeline"
+  ]
+}

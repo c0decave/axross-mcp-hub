@@ -1,0 +1,13 @@
+{
+  "tools": [
+    "conversations",
+    "credentials",
+    "dns_queries",
+    "endpoints",
+    "follow_stream",
+    "http_requests",
+    "packets",
+    "pcap_info",
+    "protocol_hierarchy"
+  ]
+}

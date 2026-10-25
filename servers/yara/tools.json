@@ -1,0 +1,9 @@
+{
+  "tools": [
+    "get_scan_results",
+    "list_active_scans",
+    "list_rulesets",
+    "yara_scan",
+    "yara_scan_with_rules"
+  ]
+}

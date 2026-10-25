@@ -1,0 +1,7 @@
+{
+  "tools": [
+    "list_rules",
+    "scan_directory",
+    "scan_git_history"
+  ]
+}

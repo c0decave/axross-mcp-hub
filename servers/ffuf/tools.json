@@ -1,0 +1,11 @@
+{
+  "tools": [
+    "ffuf_custom",
+    "ffuf_dir",
+    "ffuf_param",
+    "ffuf_vhost",
+    "get_fuzz_results",
+    "list_active_scans",
+    "list_wordlists"
+  ]
+}

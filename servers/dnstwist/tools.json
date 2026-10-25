@@ -1,0 +1,7 @@
+{
+  "tools": [
+    "dnstwist_fuzzers",
+    "dnstwist_permutations",
+    "dnstwist_scan"
+  ]
+}

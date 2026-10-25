@@ -1,0 +1,10 @@
+{
+  "tools": [
+    "get_scan_results",
+    "list_active_scans",
+    "sql_dump",
+    "sql_enumerate",
+    "sql_scan",
+    "sql_test"
+  ]
+}

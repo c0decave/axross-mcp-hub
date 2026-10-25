@@ -1,0 +1,7 @@
+{
+  "tools": [
+    "crack",
+    "extract_hash",
+    "list_formats"
+  ]
+}

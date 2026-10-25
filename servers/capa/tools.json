@@ -1,0 +1,7 @@
+{
+  "tools": [
+    "capa_analyze",
+    "get_analysis_results",
+    "list_active_scans"
+  ]
+}

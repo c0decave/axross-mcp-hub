@@ -1,0 +1,13 @@
+{
+  "tools": [
+    "analyze_capinfos",
+    "analyze_dhcp_packets",
+    "analyze_dns_packets",
+    "analyze_icmp_packets",
+    "analyze_sip_packets",
+    "analyze_tcp_anomalies",
+    "analyze_tcp_connections",
+    "analyze_tcp_retransmissions",
+    "analyze_traffic_flow"
+  ]
+}

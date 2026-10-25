@@ -1,0 +1,10 @@
+{
+  "tools": [
+    "get_scan_results",
+    "list_active_scans",
+    "port_scan",
+    "quick_scan",
+    "script_scan",
+    "service_scan"
+  ]
+}

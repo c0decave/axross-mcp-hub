@@ -1,7 +1,9 @@
 name: build
 
 # Builds every server image, starts it with axross's container flags (initialize +
-# tools/list), scans it with Trivy (CRITICAL with a fix available fails the job), pushes
+# tools/list must offer exactly servers/<name>/tools.json), runs its smoke spec from
+# tests/axross-smoke.json (files, a local target, a real call, a refused call), scans it
+# with Trivy (CRITICAL with a fix available fails the job), pushes
 # it to ghcr.io/c0decave/axross-mcp-<name> and reports the pushed digest. The catalog job
 # turns the digests into catalog.json (an artifact; commit it after checking).
 
@@ -34,8 +36,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: make_catalog tests
+      - name: hub tests (catalog, smoke spec)
         run: python3 -m unittest discover -s tests -v
+      - name: tests/axross-smoke.json covers every catalog entry
+        run: python3 scripts/axross_smoke.py --check
       - name: catalog.json matches the metadata (pending digests allowed)
         run: python3 scripts/make_catalog.py --check --allow-pending
 
@@ -45,7 +49,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        server: [binwalk, capa, dnstwist, mcpcap, nmap, nuclei, radare2, sqlmap, yara]
+        server: [binwalk, capa, crtsh, dnstwist, exiftool, ffuf, floss, gitleaks, john, mcpcap,
+                 nmap, nuclei, radare2, sleuthkit, sqlmap, tshark, yara]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -67,7 +72,16 @@ jobs:
         run: |
           python3 scripts/smoke_test.py --engine docker --list-only \
             --image local/axross-mcp-${{ matrix.server }}:ci \
-            --spec servers/${{ matrix.server }}/smoke.json
+            --spec servers/${{ matrix.server }}/smoke.json \
+            --tools-file servers/${{ matrix.server }}/tools.json
+
+      - name: Smoke spec (tests/axross-smoke.json) with axross's run line
+        # Targets are published on docker's host-only bridge address; specs that reach a
+        # public service (crtsh, through axross's allowlist proxy) run only locally.
+        run: |
+          python3 scripts/axross_smoke.py --engine docker --skip-live-network \
+            --target-host 172.17.0.1 --run ${{ matrix.server }} \
+            --image ${{ matrix.server }}=local/axross-mcp-${{ matrix.server }}:ci
 
       - name: Install Trivy ${{ env.TRIVY_VERSION }} (checksum pinned)
         run: |

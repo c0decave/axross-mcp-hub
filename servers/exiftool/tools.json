@@ -1,0 +1,6 @@
+{
+  "tools": [
+    "list_supported_formats",
+    "read_metadata"
+  ]
+}

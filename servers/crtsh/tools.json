@@ -1,0 +1,6 @@
+{
+  "tools": [
+    "ct_certificate",
+    "ct_search"
+  ]
+}

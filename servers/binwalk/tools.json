@@ -1,0 +1,11 @@
+{
+  "tools": [
+    "binwalk_entropy",
+    "binwalk_extract",
+    "binwalk_hexdump",
+    "binwalk_scan",
+    "get_scan_results",
+    "list_active_scans",
+    "list_extractions"
+  ]
+}

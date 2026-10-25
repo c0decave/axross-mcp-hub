@@ -1,0 +1,10 @@
+{
+  "tools": [
+    "get_scan_results",
+    "list_active_scans",
+    "list_templates",
+    "nuclei_scan",
+    "quick_scan",
+    "template_scan"
+  ]
+}
