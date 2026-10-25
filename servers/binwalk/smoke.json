@@ -1,0 +1,13 @@
+{
+  "name": "binwalk",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["binwalk_scan", "binwalk_extract", "binwalk_entropy", "binwalk_hexdump"],
+  "calls": [
+    {"tool": "binwalk_scan", "arguments": {"filepath": "/work/firmware.bin"}, "expect": "Zip archive data"},
+    {"tool": "binwalk_extract", "arguments": {"filepath": "/work/firmware.bin"}, "expect": "readme.txt"},
+    {"tool": "binwalk_entropy", "arguments": {"filepath": "/work/firmware.bin"}, "expect": "\"status\": \"completed\""},
+    {"tool": "binwalk_hexdump", "arguments": {"filepath": "/work/firmware.bin", "offset": 0, "length": 32}, "expect": "00000000:"},
+    {"tool": "binwalk_scan", "arguments": {"filepath": "/etc/passwd"}, "expect": "only paths under /work", "expect_error": true}
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "hub:binwalk",
+  "name": "binwalk",
+  "title": "binwalk",
+  "description": "Firmware analysis with binwalk: signature scan, extraction of embedded archives and file systems (SquashFS, CPIO, 7z, zip, gzip, xz, bzip2, LZO), entropy analysis and hex dumps. Files are read from the folder mounted at /work. Extraction writes to a writable folder mounted at /out, else to the container's /tmp (64 MiB, gone when the server stops). No network.",
+  "category": "Security: Firmware & Forensics",
+  "tags": ["security", "firmware", "binwalk", "forensics", "extraction"],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/binwalk",
+  "page": "https://github.com/OSPG/binwalk",
+  "license": "MIT (MCP server, FuzzingLabs; binwalk)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-binwalk",
+  "tag": "latest",
+  "mounts": [
+    {"target": "/work", "description": "The folder with the firmware images (read-only is enough)", "required": true},
+    {"target": "/out", "description": "A folder for extracted files (tick writable)"}
+  ],
+  "network": "none",
+  "notes": "Extraction runs third-party extractors on untrusted input inside the container (no capabilities, no network). Mount /out writable only when you want the extracted files kept."
+}
