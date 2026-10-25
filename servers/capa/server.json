@@ -1,0 +1,19 @@
+{
+  "id": "hub:capa",
+  "name": "capa",
+  "title": "capa (Mandiant)",
+  "description": "Finds the capabilities of a PE, ELF or .NET binary or shellcode with Mandiant capa and the capa-rules set, mapped to MITRE ATT&CK and MBC. Files are read from the folder mounted at /work (capa_analyze takes /work/<file>). No network.",
+  "category": "Security: Reverse Engineering",
+  "tags": ["security", "malware-analysis", "capa", "att&ck", "reverse-engineering"],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/capa",
+  "page": "https://github.com/mandiant/capa",
+  "license": "MIT (MCP server, FuzzingLabs) AND Apache-2.0 (capa, capa-rules)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-capa",
+  "tag": "latest",
+  "mounts": [
+    {"target": "/work", "description": "The folder with the samples to analyze (read-only is enough)", "required": true}
+  ],
+  "network": "none",
+  "notes": "Large binaries can exceed axross's 512 MiB container memory limit or the 300 s default timeout; capa_analyze takes a timeout of up to 3600 s."
+}

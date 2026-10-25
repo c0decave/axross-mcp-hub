@@ -1,0 +1,10 @@
+{
+  "name": "capa",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["capa_analyze", "get_analysis_results"],
+  "calls": [
+    {"tool": "capa_analyze", "arguments": {"filepath": "/work/caps"}, "expect": "act as TCP client", "timeout": 600},
+    {"tool": "capa_analyze", "arguments": {"filepath": "/etc/passwd"}, "expect": "only paths under /work", "expect_error": true}
+  ]
+}

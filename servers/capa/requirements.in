@@ -1,0 +1,4 @@
+mcp==1.30.0
+pydantic==2.14.1
+pydantic-settings==2.16.1
+flare-capa==10.0.0
