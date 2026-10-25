@@ -2,19 +2,8 @@
   "schema": "axross-mcp-catalog",
   "version": 1,
   "title": "axross-mcp-hub",
-  "description": "Curated, audited, container-packaged MCP servers for authorized security work (reverse engineering, firmware and forensics, network recon, web, OSINT), built by https://github.com/c0decave/axross-mcp-hub and pinned by digest. PENDING: these images have no published digest yet. axross refuses every entry without a digest; scripts/make_catalog.py fills them from the first CI run.",
-  "state": "pending-digests",
-  "pending": [
-    "binwalk",
-    "capa",
-    "dnstwist",
-    "mcpcap",
-    "nmap",
-    "nuclei",
-    "radare2",
-    "sqlmap",
-    "yara"
-  ],
+  "description": "Curated, audited, container-packaged MCP servers for authorized security work (reverse engineering, firmware and forensics, network recon, web, OSINT), built by https://github.com/c0decave/axross-mcp-hub and pinned by digest.",
+  "state": "pinned",
   "entries": [
     {
       "id": "hub:binwalk",
@@ -35,6 +24,7 @@
       "kind": "oci",
       "image": "ghcr.io/c0decave/axross-mcp-binwalk",
       "tag": "latest",
+      "digest": "sha256:6ebcf82c6c20842fd2ba6b934377214f5d2644ebe66c1653c6b5d2c0662311e1",
       "mounts": [
         {
           "target": "/work",
@@ -68,6 +58,7 @@
       "kind": "oci",
       "image": "ghcr.io/c0decave/axross-mcp-capa",
       "tag": "latest",
+      "digest": "sha256:04d79f6d2eeb6cabd3b99f73379b799dadf8f49affb0d81889e4491a91f077b5",
       "mounts": [
         {
           "target": "/work",
@@ -97,6 +88,7 @@
       "kind": "oci",
       "image": "ghcr.io/c0decave/axross-mcp-dnstwist",
       "tag": "latest",
+      "digest": "sha256:f0ddff8e315b11811adf789f8f202c66703e36f7efb14f4976b5393159fe44ef",
       "network": "full",
       "notes": "Without network dnstwist_permutations still works; dnstwist_scan then reports every domain as unresolved."
     },
@@ -119,6 +111,7 @@
       "kind": "oci",
       "image": "ghcr.io/c0decave/axross-mcp-mcpcap",
       "tag": "latest",
+      "digest": "sha256:51215e61122e7ca0d8e4d55d7477f1a4b2939a798eac39ad54a9c5345566aa2d",
       "mounts": [
         {
           "target": "/work",
@@ -148,6 +141,7 @@
       "kind": "oci",
       "image": "ghcr.io/c0decave/axross-mcp-nmap",
       "tag": "latest",
+      "digest": "sha256:120775408db0f38683554b16e9013dd4b9c6702ebb5f10f22163c610ac3c160d",
       "network": "full",
       "notes": "TCP connect scans only: axross grants the container no NET_RAW, so SYN, UDP and OS-detection scans are not offered. Scan only systems you are authorized to test."
     },
@@ -170,6 +164,7 @@
       "kind": "oci",
       "image": "ghcr.io/c0decave/axross-mcp-nuclei",
       "tag": "latest",
+      "digest": "sha256:e3178594cded7d0acffa468b6f3814e3ca7437d9d6dd592f462673bc7156d53d",
       "network": "full",
       "notes": "Interactsh (out-of-band callbacks through a third-party server) and template updates are off. A scan with every template can exceed axross's 512 MiB memory limit: prefer categories, tags or severities. Scan only systems you are authorized to test."
     },
@@ -192,6 +187,7 @@
       "kind": "oci",
       "image": "ghcr.io/c0decave/axross-mcp-radare2",
       "tag": "latest",
+      "digest": "sha256:569231cfec83b121ffc4cdbe9ce7f45bb3e3c51bceea6d3989763e5a7ce906e9",
       "mounts": [
         {
           "target": "/work",
@@ -221,6 +217,7 @@
       "kind": "oci",
       "image": "ghcr.io/c0decave/axross-mcp-sqlmap",
       "tag": "latest",
+      "digest": "sha256:ba0ae22431afcc4d97959dfeab62ef3e6531aeec1fc40a6794b518461e329a7b",
       "network": "full",
       "notes": "sqlmap changes data on the target only through what you ask for (dump reads). Test only systems you are authorized to test."
     },
@@ -243,6 +240,7 @@
       "kind": "oci",
       "image": "ghcr.io/c0decave/axross-mcp-yara",
       "tag": "latest",
+      "digest": "sha256:d6b941ab3d8ab637ff0e49f7e2c633b7ad7f34661ed08ec784419e18fb29cd39",
       "mounts": [
         {
           "target": "/work",
