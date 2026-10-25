@@ -1,0 +1,16 @@
+{
+  "id": "hub:nuclei",
+  "name": "nuclei",
+  "title": "Nuclei (ProjectDiscovery)",
+  "description": "Template-based vulnerability scanning with ProjectDiscovery nuclei and a pinned nuclei-templates release: full scans with severity and tag filters, a quick high/critical scan, and scans by category (cves, exposures, misconfiguration, technologies, default-logins, takeovers, network, ssl, dns, ...). Needs network: Full.",
+  "category": "Security: Web",
+  "tags": ["security", "nuclei", "vulnerability-scan", "web", "cve"],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/nuclei",
+  "page": "https://github.com/projectdiscovery/nuclei",
+  "license": "MIT (MCP server, FuzzingLabs; nuclei; nuclei-templates)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-nuclei",
+  "tag": "latest",
+  "network": "full",
+  "notes": "Interactsh (out-of-band callbacks through a third-party server) and template updates are off. A scan with every template can exceed axross's 512 MiB memory limit: prefer categories, tags or severities. Scan only systems you are authorized to test."
+}

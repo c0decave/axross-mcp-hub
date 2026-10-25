@@ -1,0 +1,9 @@
+{
+  "name": "nuclei",
+  "network": "full",
+  "expect_tools": ["nuclei_scan", "quick_scan", "template_scan", "list_templates"],
+  "calls": [
+    {"tool": "template_scan", "arguments": {"target": "http://${TARGET_HOST}:${TARGET_PORT}/", "templates": ["misconfiguration"], "severity": ["info"]}, "expect": "http-missing-security-headers", "timeout": 900},
+    {"tool": "nuclei_scan", "arguments": {"target": "-u http://x", "tags": ["tech"]}, "expect": "Error: target:", "expect_error": true}
+  ]
+}
