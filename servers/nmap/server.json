@@ -1,0 +1,16 @@
+{
+  "id": "hub:nmap",
+  "name": "nmap",
+  "title": "Nmap",
+  "description": "Network reconnaissance with Nmap: TCP connect port scans, service and version detection, NSE scripts and a quick top-100 scan, with parsed results. Needs network: Full (scans go to arbitrary hosts and ports, which an HTTP allowlist cannot carry).",
+  "category": "Security: Network Recon",
+  "tags": ["security", "nmap", "port-scan", "recon", "network"],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/nmap",
+  "page": "https://nmap.org/",
+  "license": "MIT (MCP server, FuzzingLabs) AND Nmap licence (GPL-2.0 with clarifications, Debian package)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-nmap",
+  "tag": "latest",
+  "network": "full",
+  "notes": "TCP connect scans only: axross grants the container no NET_RAW, so SYN, UDP and OS-detection scans are not offered. Scan only systems you are authorized to test."
+}

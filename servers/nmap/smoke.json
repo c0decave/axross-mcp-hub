@@ -1,0 +1,10 @@
+{
+  "name": "nmap",
+  "network": "full",
+  "expect_tools": ["port_scan", "service_scan", "script_scan", "quick_scan", "get_scan_results"],
+  "calls": [
+    {"tool": "port_scan", "arguments": {"target": "${TARGET_HOST}", "ports": "${TARGET_PORT}"}, "expect": "\"port\": \"${TARGET_PORT}\"", "timeout": 180},
+    {"tool": "service_scan", "arguments": {"target": "${TARGET_HOST}", "ports": "${TARGET_PORT}"}, "expect": "\"port\": \"${TARGET_PORT}\"", "timeout": 240},
+    {"tool": "port_scan", "arguments": {"target": "--script=x", "ports": "80"}, "expect": "Error: target:", "expect_error": true}
+  ]
+}
