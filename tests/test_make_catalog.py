@@ -28,15 +28,20 @@ D2 = "sha256:" + "ab" * 32
 
 
 class Hub:
-    """A copy of the hub's servers/ and digests.json in a temporary folder."""
+    """A copy of the hub's servers/ in a temporary folder, with a digests.json
+    that has no image published yet."""
 
     def __init__(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
         shutil.copytree(HUB / "servers", self.root / "servers",
                         ignore=shutil.ignore_patterns("src", "LICENSES", "*.txt", "*.in"))
-        shutil.copy(HUB / "digests.json", self.root / "digests.json")
         self.names = sorted(p.parent.name for p in (self.root / "servers").glob("*/server.json"))
+        # Every test starts unpublished, whatever the hub's own digests.json
+        # holds by now (it held only nulls when these tests were written).
+        digests = json.loads((HUB / "digests.json").read_text())
+        digests["images"] = {name: None for name in self.names}
+        (self.root / "digests.json").write_text(json.dumps(digests, indent=2) + "\n")
 
     def run(self, *args: str) -> tuple[int, str]:
         out, err = io.StringIO(), io.StringIO()
