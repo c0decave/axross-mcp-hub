@@ -1,0 +1,163 @@
+name: build
+
+# Builds every server image, starts it with axross's container flags (initialize +
+# tools/list), scans it with Trivy (CRITICAL with a fix available fails the job), pushes
+# it to ghcr.io/c0decave/axross-mcp-<name> and reports the pushed digest. The catalog job
+# turns the digests into catalog.json (an artifact; commit it after checking).
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/c0decave/axross-mcp-
+  SOURCE_LABEL: org.opencontainers.image.source=https://github.com/c0decave/axross-mcp-hub
+  TRIVY_VERSION: "0.76.1"
+  TRIVY_SHA256: c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: make_catalog tests
+        run: python3 -m unittest discover -s tests -v
+      - name: catalog.json matches the metadata (pending digests allowed)
+        run: python3 scripts/make_catalog.py --check --allow-pending
+
+  image:
+    needs: test
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        server: [binwalk, capa, dnstwist, mcpcap, nmap, nuclei, radare2, sqlmap, yara]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build (loaded locally for the checks)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: servers/${{ matrix.server }}
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: local/axross-mcp-${{ matrix.server }}:ci
+          labels: ${{ env.SOURCE_LABEL }}
+
+      - name: Start with axross's run line (initialize, tools/list)
+        run: |
+          python3 scripts/smoke_test.py --engine docker --list-only \
+            --image local/axross-mcp-${{ matrix.server }}:ci \
+            --spec servers/${{ matrix.server }}/smoke.json
+
+      - name: Install Trivy ${{ env.TRIVY_VERSION }} (checksum pinned)
+        run: |
+          curl -fsSL -o /tmp/trivy.tar.gz \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  /tmp/trivy.tar.gz" | sha256sum -c -
+          mkdir -p /tmp/trivy && tar -xzf /tmp/trivy.tar.gz -C /tmp/trivy trivy
+          /tmp/trivy/trivy --version
+
+      - name: Trivy scan (fails on CRITICAL with a fix available)
+        run: |
+          /tmp/trivy/trivy image --scanners vuln --severity CRITICAL --ignore-unfixed \
+            --exit-code 1 --no-progress local/axross-mcp-${{ matrix.server }}:ci
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags
+        id: tags
+        if: github.event_name != 'pull_request'
+        run: |
+          image="${IMAGE_PREFIX}${{ matrix.server }}"
+          tags="${image}:sha-${GITHUB_SHA::12}"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then tags="${tags},${image}:${GITHUB_REF_NAME}"; fi
+          if [ "${GITHUB_REF}" = "refs/heads/main" ] || [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tags="${tags},${image}:latest"
+          fi
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "tags=${tags}" >> "$GITHUB_OUTPUT"
+
+      - name: Push
+        id: push
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: servers/${{ matrix.server }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: ${{ env.SOURCE_LABEL }}
+          provenance: mode=max
+          sbom: true
+
+      - name: Digest
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+          IMAGE: ${{ steps.tags.outputs.image }}
+        run: |
+          echo "${DIGEST}" | grep -Eq '^sha256:[0-9a-f]{64}$'
+          printf '{"name": "%s", "image": "%s", "digest": "%s"}\n' \
+            "${{ matrix.server }}" "${IMAGE}" "${DIGEST}" > "digest-${{ matrix.server }}.json"
+          echo "${IMAGE}@${DIGEST}"
+          echo "| ${{ matrix.server }} | \`${IMAGE}@${DIGEST}\` |" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name != 'pull_request'
+        with:
+          name: digest-${{ matrix.server }}
+          path: digest-${{ matrix.server }}.json
+          if-no-files-found: error
+
+  catalog:
+    needs: image
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digest-*
+          path: ci-digests
+          merge-multiple: true
+      - name: catalog.json with the pushed digests
+        run: |
+          python3 scripts/make_catalog.py --ci-digests ci-digests --write-digests
+          python3 scripts/make_catalog.py --check
+          cat ci-digests/digest-*.json
+          { echo '### digests.json'; echo '```json'; cat digests.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: catalog
+          path: |
+            catalog.json
+            digests.json
+          if-no-files-found: error
