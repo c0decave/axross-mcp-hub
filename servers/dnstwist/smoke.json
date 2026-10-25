@@ -1,0 +1,10 @@
+{
+  "name": "dnstwist",
+  "network": "none",
+  "expect_tools": ["dnstwist_permutations", "dnstwist_scan", "dnstwist_fuzzers"],
+  "calls": [
+    {"tool": "dnstwist_permutations", "arguments": {"domain": "example.com", "fuzzers": ["omission"]}, "expect": "exmple.com"},
+    {"tool": "dnstwist_permutations", "arguments": {"domain": "--help"}, "expect": "domain: a domain name", "expect_error": true},
+    {"tool": "dnstwist_scan", "arguments": {"domain": "example.com", "fuzzers": ["omission"], "registered_only": false, "threads": 2}, "expect": "exmple.com", "timeout": 180}
+  ]
+}

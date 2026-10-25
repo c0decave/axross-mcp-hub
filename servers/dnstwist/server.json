@@ -1,0 +1,16 @@
+{
+  "id": "hub:dnstwist",
+  "name": "dnstwist",
+  "title": "dnstwist",
+  "description": "Finds look-alike domains of a domain (typosquatting, homographs, bitsquatting, TLD swaps, ...) with dnstwist: dnstwist_permutations works offline; dnstwist_scan resolves them (A, AAAA, NS, MX) and needs network: Full (DNS). No web fetching, WHOIS or GeoIP.",
+  "category": "Security: OSINT",
+  "tags": ["security", "osint", "dnstwist", "phishing", "dns"],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/dnstwist",
+  "page": "https://github.com/elceef/dnstwist",
+  "license": "MIT (MCP server, axross-mcp-hub) AND Apache-2.0 (dnstwist)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-dnstwist",
+  "tag": "latest",
+  "network": "full",
+  "notes": "Without network dnstwist_permutations still works; dnstwist_scan then reports every domain as unresolved."
+}
