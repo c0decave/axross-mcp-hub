@@ -50,7 +50,12 @@ def run_command(name: str, image: str, *, network: str = "none", mounts=(), args
                 program: str = "podman", env_fd: int | str = "AXROSS_ENV_FD",
                 run_id: str = "AXROSS_RUN_ID", egress_port: int | str = "AXROSS_EGRESS_PORT") -> list[str]:
     """The ``podman run`` line axross builds for a container server."""
-    argv = [program, "run", *RUN_FLAGS, f"--name=axross-mcp-{name}-{run_id}",
+    flags = RUN_FLAGS
+    if os.path.basename(program) == "docker":
+        # notmpcopyup is podman's: docker refuses it ("invalid tmpfs option"),
+        # and its tmpfs never copies the image's /tmp up anyway - same /tmp.
+        flags = tuple(f.replace(",notmpcopyup", "") for f in RUN_FLAGS)
+    argv = [program, "run", *flags, f"--name=axross-mcp-{name}-{run_id}",
             f"--label=io.axross.mcp={name}", f"--env-file=/dev/fd/{env_fd}"]
     if network == "none":
         argv.append("--network=none")

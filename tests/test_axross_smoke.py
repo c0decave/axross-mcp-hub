@@ -220,3 +220,26 @@ class FileHelpers(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RunLineEngineTest(unittest.TestCase):
+    """axross runs podman, whose tmpfs would copy the image's /tmp up unless
+    told not to (notmpcopyup); CI smoke-tests with docker, which refuses that
+    option and never copies up."""
+
+    def _tmpfs(self, program):
+        st = _load("smoke_test", HUB / "scripts" / "smoke_test.py")
+        argv = st.run_command("x", "ghcr.io/c0decave/axross-mcp-x@sha256:" + "0" * 64,
+                              program=program)
+        return next(a for a in argv if a.startswith("--tmpfs=/tmp:"))
+
+    def test_podman_gets_notmpcopyup(self):
+        self.assertIn("notmpcopyup", self._tmpfs("podman").split(","))
+
+    def test_docker_gets_no_notmpcopyup(self):
+        flag = self._tmpfs("docker")
+        self.assertNotIn("notmpcopyup", flag)
+        self.assertIn("noexec", flag)  # the rest of the tmpfs stays as it is
+
+    def test_a_docker_path_counts_as_docker(self):
+        self.assertNotIn("notmpcopyup", self._tmpfs("/usr/bin/docker"))
