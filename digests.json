@@ -1,0 +1,14 @@
+{
+  "comment": "Digests of the images ghcr.io/c0decave/axross-mcp-<name>, written by scripts/make_catalog.py --ci-digests <digest files of a CI run> --write-digests. null = not published yet: catalog.json then carries that entry without a digest and axross refuses it.",
+  "images": {
+    "binwalk": null,
+    "capa": null,
+    "dnstwist": null,
+    "mcpcap": null,
+    "nmap": null,
+    "nuclei": null,
+    "radare2": null,
+    "sqlmap": null,
+    "yara": null
+  }
+}

@@ -1,0 +1,261 @@
+{
+  "schema": "axross-mcp-catalog",
+  "version": 1,
+  "title": "axross-mcp-hub",
+  "description": "Curated, audited, container-packaged MCP servers for authorized security work (reverse engineering, firmware and forensics, network recon, web, OSINT), built by https://github.com/c0decave/axross-mcp-hub and pinned by digest. PENDING: these images have no published digest yet. axross refuses every entry without a digest; scripts/make_catalog.py fills them from the first CI run.",
+  "state": "pending-digests",
+  "pending": [
+    "binwalk",
+    "capa",
+    "dnstwist",
+    "mcpcap",
+    "nmap",
+    "nuclei",
+    "radare2",
+    "sqlmap",
+    "yara"
+  ],
+  "entries": [
+    {
+      "id": "hub:binwalk",
+      "name": "binwalk",
+      "title": "binwalk",
+      "description": "Firmware analysis with binwalk: signature scan, extraction of embedded archives and file systems (SquashFS, CPIO, 7z, zip, gzip, xz, bzip2, LZO), entropy analysis and hex dumps. Files are read from the folder mounted at /work. Extraction writes to a writable folder mounted at /out, else to the container's /tmp (64 MiB, gone when the server stops). No network.",
+      "category": "Security: Firmware & Forensics",
+      "tags": [
+        "security",
+        "firmware",
+        "binwalk",
+        "forensics",
+        "extraction"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/binwalk",
+      "page": "https://github.com/OSPG/binwalk",
+      "license": "MIT (MCP server, FuzzingLabs; binwalk)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-binwalk",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "The folder with the firmware images (read-only is enough)",
+          "required": true
+        },
+        {
+          "target": "/out",
+          "description": "A folder for extracted files (tick writable)"
+        }
+      ],
+      "network": "none",
+      "notes": "Extraction runs third-party extractors on untrusted input inside the container (no capabilities, no network). Mount /out writable only when you want the extracted files kept."
+    },
+    {
+      "id": "hub:capa",
+      "name": "capa",
+      "title": "capa (Mandiant)",
+      "description": "Finds the capabilities of a PE, ELF or .NET binary or shellcode with Mandiant capa and the capa-rules set, mapped to MITRE ATT&CK and MBC. Files are read from the folder mounted at /work (capa_analyze takes /work/<file>). No network.",
+      "category": "Security: Reverse Engineering",
+      "tags": [
+        "security",
+        "malware-analysis",
+        "capa",
+        "att&ck",
+        "reverse-engineering"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/capa",
+      "page": "https://github.com/mandiant/capa",
+      "license": "MIT (MCP server, FuzzingLabs) AND Apache-2.0 (capa, capa-rules)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-capa",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "The folder with the samples to analyze (read-only is enough)",
+          "required": true
+        }
+      ],
+      "network": "none",
+      "notes": "Large binaries can exceed axross's 512 MiB container memory limit or the 300 s default timeout; capa_analyze takes a timeout of up to 3600 s."
+    },
+    {
+      "id": "hub:dnstwist",
+      "name": "dnstwist",
+      "title": "dnstwist",
+      "description": "Finds look-alike domains of a domain (typosquatting, homographs, bitsquatting, TLD swaps, ...) with dnstwist: dnstwist_permutations works offline; dnstwist_scan resolves them (A, AAAA, NS, MX) and needs network: Full (DNS). No web fetching, WHOIS or GeoIP.",
+      "category": "Security: OSINT",
+      "tags": [
+        "security",
+        "osint",
+        "dnstwist",
+        "phishing",
+        "dns"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/dnstwist",
+      "page": "https://github.com/elceef/dnstwist",
+      "license": "MIT (MCP server, axross-mcp-hub) AND Apache-2.0 (dnstwist)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-dnstwist",
+      "tag": "latest",
+      "network": "full",
+      "notes": "Without network dnstwist_permutations still works; dnstwist_scan then reports every domain as unresolved."
+    },
+    {
+      "id": "hub:mcpcap",
+      "name": "mcpcap",
+      "title": "mcpcap (PCAP analysis)",
+      "description": "Analyzes packet captures (.pcap, .pcapng, .cap) with scapy: DNS, DHCP, ICMP, SIP, TCP connections, anomalies, retransmissions, traffic flows and capinfos-style statistics. Files are read from the folder mounted at /work (tools take /work/<file>). No network.",
+      "category": "Security: Firmware & Forensics",
+      "tags": [
+        "security",
+        "pcap",
+        "network-forensics",
+        "dns",
+        "tcp"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/mcpcap",
+      "page": "https://github.com/mcpcap/mcpcap",
+      "license": "MIT (mcpcap) AND GPL-2.0-only (scapy)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-mcpcap",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "The folder with the capture files (read-only is enough)",
+          "required": true
+        }
+      ],
+      "network": "none",
+      "notes": "mcpcap can also download a capture from an http(s) URL; with no network (the default) that fails, which is intended."
+    },
+    {
+      "id": "hub:nmap",
+      "name": "nmap",
+      "title": "Nmap",
+      "description": "Network reconnaissance with Nmap: TCP connect port scans, service and version detection, NSE scripts and a quick top-100 scan, with parsed results. Needs network: Full (scans go to arbitrary hosts and ports, which an HTTP allowlist cannot carry).",
+      "category": "Security: Network Recon",
+      "tags": [
+        "security",
+        "nmap",
+        "port-scan",
+        "recon",
+        "network"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/nmap",
+      "page": "https://nmap.org/",
+      "license": "MIT (MCP server, FuzzingLabs) AND Nmap licence (GPL-2.0 with clarifications, Debian package)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-nmap",
+      "tag": "latest",
+      "network": "full",
+      "notes": "TCP connect scans only: axross grants the container no NET_RAW, so SYN, UDP and OS-detection scans are not offered. Scan only systems you are authorized to test."
+    },
+    {
+      "id": "hub:nuclei",
+      "name": "nuclei",
+      "title": "Nuclei (ProjectDiscovery)",
+      "description": "Template-based vulnerability scanning with ProjectDiscovery nuclei and a pinned nuclei-templates release: full scans with severity and tag filters, a quick high/critical scan, and scans by category (cves, exposures, misconfiguration, technologies, default-logins, takeovers, network, ssl, dns, ...). Needs network: Full.",
+      "category": "Security: Web",
+      "tags": [
+        "security",
+        "nuclei",
+        "vulnerability-scan",
+        "web",
+        "cve"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/nuclei",
+      "page": "https://github.com/projectdiscovery/nuclei",
+      "license": "MIT (MCP server, FuzzingLabs; nuclei; nuclei-templates)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-nuclei",
+      "tag": "latest",
+      "network": "full",
+      "notes": "Interactsh (out-of-band callbacks through a third-party server) and template updates are off. A scan with every template can exceed axross's 512 MiB memory limit: prefer categories, tags or severities. Scan only systems you are authorized to test."
+    },
+    {
+      "id": "hub:radare2",
+      "name": "radare2",
+      "title": "radare2 (r2mcp)",
+      "description": "Reverse engineering with radare2 through its official MCP server r2mcp: open a binary, analyze, list functions, imports, strings and sections, disassemble, decompile (r2's pdc), cross references. Binaries are read from the folder mounted at /work (open_file takes /work/<file>); r2mcp refuses paths outside /work. No network.",
+      "category": "Security: Reverse Engineering",
+      "tags": [
+        "security",
+        "reverse-engineering",
+        "radare2",
+        "disassembler",
+        "decompiler"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/radare2",
+      "page": "https://github.com/radareorg/radare2-mcp",
+      "license": "MIT (r2mcp) AND LGPL-3.0-only (radare2; some plugins GPL-3.0, Apache-2.0, BSD)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-radare2",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "The folder with the binaries to analyze (read-only is enough)",
+          "required": true
+        }
+      ],
+      "network": "none",
+      "notes": "radare2's own sandbox is on (no shell, no sockets, no file writes) and the raw run_command / run_javascript tools are off. The sql tool needs the r2xsql plugin, which is not included."
+    },
+    {
+      "id": "hub:sqlmap",
+      "name": "sqlmap",
+      "title": "sqlmap",
+      "description": "SQL injection detection and exploitation with sqlmap: scan a URL, test a parameter, enumerate databases, tables and columns, dump table data. Needs network: Full.",
+      "category": "Security: Web",
+      "tags": [
+        "security",
+        "sqlmap",
+        "sql-injection",
+        "web",
+        "exploitation"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/sqlmap",
+      "page": "https://sqlmap.org/",
+      "license": "MIT (MCP server, FuzzingLabs) AND GPL-2.0-or-later (sqlmap, with its clarifications)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-sqlmap",
+      "tag": "latest",
+      "network": "full",
+      "notes": "sqlmap changes data on the target only through what you ask for (dump reads). Test only systems you are authorized to test."
+    },
+    {
+      "id": "hub:yara",
+      "name": "yara",
+      "title": "YARA",
+      "description": "Scans files and folders with YARA: the bundled Yara-Rules subset (crypto constants, packers, anti-debug/anti-VM, capabilities), your own rule files, or inline rules. Targets are read from the folder mounted at /work; extra rule files can be mounted at /rules. No network.",
+      "category": "Security: Firmware & Forensics",
+      "tags": [
+        "security",
+        "yara",
+        "malware-analysis",
+        "forensics",
+        "detection"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/yara",
+      "page": "https://github.com/VirusTotal/yara",
+      "license": "MIT (MCP server, FuzzingLabs) AND BSD-3-Clause (YARA) AND GPL-2.0-only (bundled Yara-Rules)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-yara",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "The folder to scan (read-only is enough)",
+          "required": true
+        },
+        {
+          "target": "/rules",
+          "description": "A folder with your own .yar rule files"
+        }
+      ],
+      "network": "none",
+      "notes": "Inline rules may not use include. Directory scans do not follow symbolic links."
+    }
+  ]
+}
