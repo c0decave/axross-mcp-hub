@@ -1,0 +1,13 @@
+{
+  "name": "yara",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["yara_scan", "yara_scan_with_rules", "list_rulesets"],
+  "calls": [
+    {"tool": "list_rulesets", "arguments": {}, "expect": "crypto_signatures"},
+    {"tool": "yara_scan", "arguments": {"target": "/work"}, "expect": "\"status\": \"completed\""},
+    {"tool": "yara_scan_with_rules", "arguments": {"target": "/work", "rules": "rule hub_marker { strings: $a = \"MCPHUB-TEST-MARKER\" condition: $a }"}, "expect": "hub_marker"},
+    {"tool": "yara_scan_with_rules", "arguments": {"target": "/work", "rules": "include \"/etc/passwd\""}, "expect": "include is not allowed", "expect_error": true},
+    {"tool": "yara_scan", "arguments": {"target": "/etc"}, "expect": "only paths under /work", "expect_error": true}
+  ]
+}

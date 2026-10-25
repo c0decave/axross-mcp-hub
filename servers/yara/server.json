@@ -1,0 +1,20 @@
+{
+  "id": "hub:yara",
+  "name": "yara",
+  "title": "YARA",
+  "description": "Scans files and folders with YARA: the bundled Yara-Rules subset (crypto constants, packers, anti-debug/anti-VM, capabilities), your own rule files, or inline rules. Targets are read from the folder mounted at /work; extra rule files can be mounted at /rules. No network.",
+  "category": "Security: Firmware & Forensics",
+  "tags": ["security", "yara", "malware-analysis", "forensics", "detection"],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/yara",
+  "page": "https://github.com/VirusTotal/yara",
+  "license": "MIT (MCP server, FuzzingLabs) AND BSD-3-Clause (YARA) AND GPL-2.0-only (bundled Yara-Rules)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-yara",
+  "tag": "latest",
+  "mounts": [
+    {"target": "/work", "description": "The folder to scan (read-only is enough)", "required": true},
+    {"target": "/rules", "description": "A folder with your own .yar rule files"}
+  ],
+  "network": "none",
+  "notes": "Inline rules may not use include. Directory scans do not follow symbolic links."
+}
