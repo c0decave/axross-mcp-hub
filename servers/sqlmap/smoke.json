@@ -1,0 +1,11 @@
+{
+  "name": "sqlmap",
+  "network": "full",
+  "expect_tools": ["sql_scan", "sql_enumerate", "sql_dump", "sql_test"],
+  "calls": [
+    {"tool": "sql_test", "arguments": {"target": "http://${TARGET_HOST}:${TARGET_PORT}/item?id=1", "param": "id"}, "expect": "\"injectable\": true", "timeout": 300},
+    {"tool": "sql_enumerate", "arguments": {"target": "http://${TARGET_HOST}:${TARGET_PORT}/item?id=1", "dbms": "SQLite", "database": "SQLite_masterdb"}, "expect": "users", "timeout": 300},
+    {"tool": "sql_scan", "arguments": {"target": "file:///etc/passwd"}, "expect": "Error: target:", "expect_error": true},
+    {"tool": "sql_scan", "arguments": {"target": "http://${TARGET_HOST}:${TARGET_PORT}/item?id=1", "level": "1 --os-shell"}, "expect": "integer", "expect_error": true}
+  ]
+}

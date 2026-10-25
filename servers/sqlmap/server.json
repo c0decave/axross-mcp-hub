@@ -1,0 +1,16 @@
+{
+  "id": "hub:sqlmap",
+  "name": "sqlmap",
+  "title": "sqlmap",
+  "description": "SQL injection detection and exploitation with sqlmap: scan a URL, test a parameter, enumerate databases, tables and columns, dump table data. Needs network: Full.",
+  "category": "Security: Web",
+  "tags": ["security", "sqlmap", "sql-injection", "web", "exploitation"],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/sqlmap",
+  "page": "https://sqlmap.org/",
+  "license": "MIT (MCP server, FuzzingLabs) AND GPL-2.0-or-later (sqlmap, with its clarifications)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-sqlmap",
+  "tag": "latest",
+  "network": "full",
+  "notes": "sqlmap changes data on the target only through what you ask for (dump reads). Test only systems you are authorized to test."
+}
