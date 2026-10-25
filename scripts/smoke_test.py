@@ -3,7 +3,7 @@
 
 The container gets axross's run line (core/mcp_install.py, ``RUN_FLAGS`` and
 ``run_command``): ``--rm -i --init --pull=never --log-driver=none --cap-drop=ALL
---security-opt=no-new-privileges --read-only --tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m
+--security-opt=no-new-privileges --read-only --tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m,notmpcopyup
 --pids-limit=128 --memory=512m``, the environment through a pipe (``--env-file=/dev/fd/N``),
 ``--network=none``, the full network, or axross's allowlist network (pasta bound to the
 host's loopback, its only way out axross's CONNECT proxy, ``core.mcp_egress``; that needs
@@ -38,7 +38,7 @@ import time
 RUN_FLAGS = (
     "--rm", "-i", "--init", "--pull=never", "--log-driver=none",
     "--cap-drop=ALL", "--security-opt=no-new-privileges", "--read-only",
-    "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m", "--pids-limit=128", "--memory=512m",
+    "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m,notmpcopyup", "--pids-limit=128", "--memory=512m",
 )
 #: Mirrors axross core/mcp_install.py ALLOWLIST_NETWORK (the token is the proxy's port).
 ALLOWLIST_NETWORK = ("--network=pasta:--no-map-gw,--no-udp,--no-icmp,--ipv4-only,"
