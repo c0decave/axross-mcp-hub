@@ -1,0 +1,19 @@
+{
+  "id": "hub:radare2",
+  "name": "radare2",
+  "title": "radare2 (r2mcp)",
+  "description": "Reverse engineering with radare2 through its official MCP server r2mcp: open a binary, analyze, list functions, imports, strings and sections, disassemble, decompile (r2's pdc), cross references. Binaries are read from the folder mounted at /work (open_file takes /work/<file>); r2mcp refuses paths outside /work. No network.",
+  "category": "Security: Reverse Engineering",
+  "tags": ["security", "reverse-engineering", "radare2", "disassembler", "decompiler"],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/radare2",
+  "page": "https://github.com/radareorg/radare2-mcp",
+  "license": "MIT (r2mcp) AND LGPL-3.0-only (radare2; some plugins GPL-3.0, Apache-2.0, BSD)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-radare2",
+  "tag": "latest",
+  "mounts": [
+    {"target": "/work", "description": "The folder with the binaries to analyze (read-only is enough)", "required": true}
+  ],
+  "network": "none",
+  "notes": "radare2's own sandbox is on (no shell, no sockets, no file writes) and the raw run_command / run_javascript tools are off. The sql tool needs the r2xsql plugin, which is not included."
+}

@@ -1,0 +1,14 @@
+{
+  "name": "radare2",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["open_file", "analyze", "list_functions", "decompile_function", "list_strings"],
+  "calls": [
+    {"tool": "open_file", "arguments": {"file_path": "/work/hello"}, "expect": ""},
+    {"tool": "analyze", "arguments": {"level": 2}, "expect": ""},
+    {"tool": "list_functions", "arguments": {}, "expect": "check_password"},
+    {"tool": "list_strings", "arguments": {}, "expect": "MCPHUB-TEST-MARKER"},
+    {"tool": "decompile_function", "arguments": {"address": "sym.check_password"}, "expect": "hunter2"},
+    {"tool": "open_file", "arguments": {"file_path": "/etc/passwd"}, "expect": "Failed to open file", "expect_error": true}
+  ]
+}
