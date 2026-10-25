@@ -1,0 +1,11 @@
+{
+  "name": "mcpcap",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["analyze_dns_packets", "analyze_icmp_packets", "analyze_capinfos", "analyze_tcp_connections"],
+  "calls": [
+    {"tool": "analyze_dns_packets", "arguments": {"pcap_file": "/work/sample.pcap"}, "expect": "mcphub-test.example"},
+    {"tool": "analyze_capinfos", "arguments": {"pcap_file": "/work/sample.pcap"}, "expect": "3"},
+    {"tool": "analyze_dns_packets", "arguments": {"pcap_file": "https://example.invalid/x.pcap"}, "expect": "Failed to download", "expect_error": true}
+  ]
+}

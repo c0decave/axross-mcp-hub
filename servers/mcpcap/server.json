@@ -1,0 +1,19 @@
+{
+  "id": "hub:mcpcap",
+  "name": "mcpcap",
+  "title": "mcpcap (PCAP analysis)",
+  "description": "Analyzes packet captures (.pcap, .pcapng, .cap) with scapy: DNS, DHCP, ICMP, SIP, TCP connections, anomalies, retransmissions, traffic flows and capinfos-style statistics. Files are read from the folder mounted at /work (tools take /work/<file>). No network.",
+  "category": "Security: Firmware & Forensics",
+  "tags": ["security", "pcap", "network-forensics", "dns", "tcp"],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/mcpcap",
+  "page": "https://github.com/mcpcap/mcpcap",
+  "license": "MIT (mcpcap) AND GPL-2.0-only (scapy)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-mcpcap",
+  "tag": "latest",
+  "mounts": [
+    {"target": "/work", "description": "The folder with the capture files (read-only is enough)", "required": true}
+  ],
+  "network": "none",
+  "notes": "mcpcap can also download a capture from an http(s) URL; with no network (the default) that fails, which is intended."
+}
