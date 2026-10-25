@@ -1,0 +1,15 @@
+{
+  "name": "tshark",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["pcap_info", "protocol_hierarchy", "conversations", "packets", "follow_stream", "http_requests", "dns_queries", "credentials"],
+  "calls": [
+    {"tool": "pcap_info", "arguments": {"pcap": "/work/web.pcap"}, "expect": "Number of packets"},
+    {"tool": "http_requests", "arguments": {"pcap": "/work/web.pcap"}, "expect": "/admin/MCPHUB-TEST-MARKER"},
+    {"tool": "follow_stream", "arguments": {"pcap": "/work/web.pcap", "stream": 0}, "expect": "hello, hubber"},
+    {"tool": "credentials", "arguments": {"pcap": "/work/web.pcap"}, "expect": "hubuser"},
+    {"tool": "dns_queries", "arguments": {"pcap": "/work/sample.pcap"}, "expect": "mcphub-test.example"},
+    {"tool": "packets", "arguments": {"pcap": "/work/web.pcap", "fields": ["frame.number", "-e"]}, "expect": "fields: up to 40", "expect_error": true},
+    {"tool": "pcap_info", "arguments": {"pcap": "/etc/passwd"}, "expect": "only paths under /work", "expect_error": true}
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "hub:floss",
+  "name": "floss",
+  "title": "FLOSS",
+  "description": "Mandiant FLOSS 3.2: extracts obfuscated strings from malware - static strings plus stack strings, tight strings and strings decoded by emulating the sample's decoding routines (vivisect; the sample is never executed) - from PE files and shellcode, language-aware for Go and Rust. Samples are read from the folder mounted at /work. No network.",
+  "category": "Security: Reverse Engineering",
+  "tags": [
+    "security",
+    "reverse-engineering",
+    "malware-analysis",
+    "floss",
+    "strings",
+    "mandiant"
+  ],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/floss",
+  "page": "https://github.com/mandiant/flare-floss",
+  "license": "MIT (MCP server, axross-mcp-hub) AND Apache-2.0 (FLOSS, vivisect)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-floss",
+  "tag": "latest",
+  "mounts": [
+    {
+      "target": "/work",
+      "description": "The folder with the samples (read-only is enough)",
+      "required": true
+    }
+  ],
+  "network": "none",
+  "notes": "Emulation of large samples is slow and memory-hungry; axross's 512 MiB limit applies - use only=[\"static\"] or a smaller timeout for big files."
+}

@@ -1,0 +1,10 @@
+{
+  "name": "crtsh",
+  "network": "allowlist",
+  "hosts": ["crt.sh:443"],
+  "expect_tools": ["ct_search", "ct_certificate"],
+  "calls": [
+    {"tool": "ct_search", "arguments": {"domain": "example.com", "include_subdomains": false, "max_certificates": 5}, "expect": "\"certificates\"", "timeout": 180},
+    {"tool": "ct_search", "arguments": {"domain": "--help"}, "expect": "domain: a domain name", "expect_error": true}
+  ]
+}

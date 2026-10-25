@@ -1,0 +1,13 @@
+{
+  "name": "john",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["crack", "extract_hash", "list_formats"],
+  "calls": [
+    {"tool": "crack", "arguments": {"hashes": ["2ab96390c7dbe3439de74d0c9b0b1767"], "format": "raw-md5", "max_seconds": 60}, "expect": "hunter2", "timeout": 180},
+    {"tool": "extract_hash", "arguments": {"kind": "zip", "filepath": "/work/secret.zip"}, "expect": "$pkzip", "timeout": 120},
+    {"tool": "crack", "arguments": {"hashes": ["secret.zip/inner.txt:$pkzip$1*2*2*0*26*1a*19379bab*0*43*0*26*7e32*6042c777a265b7621b132f6f3e0a56542866d14e4304cd71b84da7fcb22c51fdcc456e5e91db*$/pkzip$:inner.txt:secret.zip::/work/secret.zip"], "format": "pkzip", "max_seconds": 60}, "expect": "hunter2", "timeout": 180},
+    {"tool": "list_formats", "arguments": {"contains": "ntlm"}, "expect": "netntlmv2"},
+    {"tool": "crack", "arguments": {"hashes": ["x"], "format": "dynamic=md5($p)"}, "expect": "format: a john format", "expect_error": true}
+  ]
+}

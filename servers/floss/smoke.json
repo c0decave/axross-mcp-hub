@@ -1,0 +1,10 @@
+{
+  "name": "floss",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["floss_strings", "floss_languages"],
+  "calls": [
+    {"tool": "floss_strings", "arguments": {"filepath": "/work/stack.exe", "only": ["stack", "tight"]}, "expect": "MCPHUB-STACK-MARKER", "timeout": 600},
+    {"tool": "floss_strings", "arguments": {"filepath": "/work/stack.exe", "only": ["--version"]}, "expect": "only: a list", "expect_error": true}
+  ]
+}

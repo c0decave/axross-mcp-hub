@@ -1,0 +1,3 @@
+# build dependencies of binary2strings (a FLOSS dependency without Linux wheels)
+setuptools
+pybind11

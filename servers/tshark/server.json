@@ -1,0 +1,30 @@
+{
+  "id": "hub:tshark",
+  "name": "tshark",
+  "title": "TShark (Wireshark)",
+  "description": "Packet capture analysis with Wireshark's TShark 4.4: capture summary (capinfos), protocol hierarchy, conversations, endpoints, packets with display filters and chosen fields, TCP/UDP/HTTP stream contents, HTTP requests, DNS queries and clear-text credentials. Captures (.pcap, .pcapng) are read from the folder mounted at /work. No network: TShark only reads files, never captures and never resolves names.",
+  "category": "Security: Firmware & Forensics",
+  "tags": [
+    "security",
+    "forensics",
+    "pcap",
+    "wireshark",
+    "tshark",
+    "network-analysis"
+  ],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/tshark",
+  "page": "https://www.wireshark.org/",
+  "license": "MIT (MCP server, axross-mcp-hub) AND GPL-2.0-or-later (Wireshark/TShark, Debian package)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-tshark",
+  "tag": "latest",
+  "mounts": [
+    {
+      "target": "/work",
+      "description": "The folder with the capture files (read-only is enough)",
+      "required": true
+    }
+  ],
+  "network": "none",
+  "notes": "Display filters and field names are validated and passed as single arguments; a capture is parsed by Wireshark's dissectors inside the container (no capabilities, no network)."
+}

@@ -1,0 +1,12 @@
+{
+  "name": "exiftool",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["read_metadata", "list_supported_formats"],
+  "calls": [
+    {"tool": "read_metadata", "arguments": {"file_path": "/work/photo.png"}, "expect": "MCPHUB-TEST-MARKER"},
+    {"tool": "read_metadata", "arguments": {"file_path": "/work/photo.png", "tags": ["Author"]}, "expect": "MCPHUB-TEST-MARKER"},
+    {"tool": "read_metadata", "arguments": {"file_path": "/work/photo.png", "tags": ["if", "$x;system('id')"]}, "expect": "SourceFile", "expect_error": true},
+    {"tool": "read_metadata", "arguments": {"file_path": "/etc/passwd"}, "expect": "only files under /work", "expect_error": true}
+  ]
+}

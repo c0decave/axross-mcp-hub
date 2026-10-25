@@ -5,11 +5,16 @@ The container gets axross's run line (core/mcp_install.py, ``RUN_FLAGS`` and
 ``run_command``): ``--rm -i --init --pull=never --log-driver=none --cap-drop=ALL
 --security-opt=no-new-privileges --read-only --tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m
 --pids-limit=128 --memory=512m``, the environment through a pipe (``--env-file=/dev/fd/N``),
-``--network=none`` unless the spec asks for the full network, and folders as
-``--volume=HOST:TARGET:ro|rw`` with ``--user=0:0``.
+``--network=none``, the full network, or axross's allowlist network (pasta bound to the
+host's loopback, its only way out axross's CONNECT proxy, ``core.mcp_egress``; that needs
+``--axross DIR`` to run the very proxy axross runs), and folders as
+``--volume=HOST:TARGET:ro|rw`` with ``--user=0:0``. The spec's ``env`` (and, for the
+allowlist, the proxy variables axross sets) go through the pipe as axross sends them.
 
 Then: ``initialize``, ``notifications/initialized``, ``tools/list`` and every call of
-the spec (``servers/<name>/smoke.json``), each checked for an expected text.
+the spec (``servers/<name>/smoke.json``), each checked for an expected text. With
+``--tools-file servers/<name>/tools.json`` the offered tools must be exactly the recorded
+ones, so a changed tool list fails.
 
     scripts/smoke_test.py --image IMAGE --spec servers/yara/smoke.json --var FIXTURES=/abs/dir
 
@@ -35,24 +40,53 @@ RUN_FLAGS = (
     "--cap-drop=ALL", "--security-opt=no-new-privileges", "--read-only",
     "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m", "--pids-limit=128", "--memory=512m",
 )
+#: Mirrors axross core/mcp_install.py ALLOWLIST_NETWORK (the token is the proxy's port).
+ALLOWLIST_NETWORK = ("--network=pasta:--no-map-gw,--no-udp,--no-icmp,--ipv4-only,"
+                     "-o,127.0.0.1,-T,AXROSS_EGRESS_PORT")
 PROTOCOL_VERSION = "2025-06-18"
 
 
 def run_command(name: str, image: str, *, network: str = "none", mounts=(), args=(),
                 program: str = "podman", env_fd: int | str = "AXROSS_ENV_FD",
-                run_id: str = "AXROSS_RUN_ID") -> list[str]:
+                run_id: str = "AXROSS_RUN_ID", egress_port: int | str = "AXROSS_EGRESS_PORT") -> list[str]:
     """The ``podman run`` line axross builds for a container server."""
     argv = [program, "run", *RUN_FLAGS, f"--name=axross-mcp-{name}-{run_id}",
             f"--label=io.axross.mcp={name}", f"--env-file=/dev/fd/{env_fd}"]
     if network == "none":
         argv.append("--network=none")
+    elif network == "allowlist":
+        argv.append(ALLOWLIST_NETWORK.replace("AXROSS_EGRESS_PORT", str(egress_port)))
     elif network != "full":
-        raise ValueError("network: none or full (the allowlist needs axross's egress proxy)")
+        raise ValueError("network: none, allowlist or full")
     if mounts:
         argv.append("--user=0:0")
         for host, target, writable in mounts:
             argv.append(f"--volume={host}:{target}:{'rw' if writable else 'ro'}")
     return [*argv, image, *args]
+
+
+def env_file(env: dict, proxy_port: int | None) -> bytes:
+    """The ``NAME=value`` lines axross writes to the pipe (core/mcp_client.py _env_file)."""
+    values = dict(env)
+    if proxy_port is not None:
+        proxy = f"http://127.0.0.1:{proxy_port}"
+        for name in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"):
+            values[name] = proxy
+        values["NO_PROXY"] = values["no_proxy"] = ""
+    for name, value in values.items():
+        if not re.match(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$", name) or any(c in value for c in "\n\r\x00"):
+            raise ValueError(f"env: {name!r} is not a single-line variable")
+    return "".join(f"{k}={v}\n" for k, v in values.items()).encode()
+
+
+def start_proxy(hosts: list[str], axross_dir: str):
+    """axross's own CONNECT proxy for *hosts* (core.mcp_egress.EgressProxy)."""
+    sys.path.insert(0, axross_dir)
+    from core.mcp_egress import EgressProxy  # axross
+
+    proxy = EgressProxy(hosts)
+    proxy.start()
+    return proxy
 
 
 def substitute(value, variables: dict[str, str]):
@@ -129,6 +163,17 @@ def result_text(message: dict) -> str:
     return "\n".join(c.get("text", "") for c in content if isinstance(c, dict))
 
 
+def check_tools_file(report: dict, names: list[str], path: str) -> bool:
+    """Whether tools/list offered exactly the tools of *path* (``{"tools": [...]}``)."""
+    with open(path, encoding="utf-8") as handle:
+        recorded = json.load(handle)["tools"]
+    added = sorted(set(names) - set(recorded))
+    gone = sorted(set(recorded) - set(names))
+    report["checks"].append({"check": "tools.json", "ok": not added and not gone,
+                             "not_recorded": added, "missing": gone})
+    return not added and not gone
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--image", required=True, help="image reference or ID")
@@ -138,7 +183,10 @@ def main(argv=None) -> int:
     parser.add_argument("--list-only", action="store_true",
                         help="initialize and tools/list only (no calls, no folders)")
     parser.add_argument("--print-argv", action="store_true")
+    parser.add_argument("--axross", help="an axross checkout: its egress proxy for allowlist specs")
     parser.add_argument("--max-text", type=int, default=1500, help="result text shown per call")
+    parser.add_argument("--tools-file", help="servers/<name>/tools.json: tools/list must offer "
+                        "exactly these tools (a changed tool list fails)")
     opts = parser.parse_args(argv)
 
     variables = dict(v.split("=", 1) for v in opts.var)
@@ -150,11 +198,20 @@ def main(argv=None) -> int:
         (substitute(m["host"], variables), m["target"], bool(m.get("writable")))
         for m in spec.get("mounts", [])
     ]
+    if opts.list_only and network == "allowlist":
+        network = "none"  # tools/list needs no network (and CI has no axross proxy)
+    proxy = None
+    if network == "allowlist":
+        if not opts.axross:
+            parser.error("an allowlist spec needs --axross DIR (axross's egress proxy)")
+        proxy = start_proxy(spec.get("hosts", []), opts.axross)
     read_fd, write_fd = os.pipe()
-    os.close(write_fd)  # axross writes the chosen environment here; the spec sets none
+    os.write(write_fd, env_file(substitute(spec.get("env", {}), variables),
+                                proxy.port if proxy else None))
+    os.close(write_fd)
     argv = run_command(f"smoke-{name}", opts.image, network=network, mounts=mounts,
                        args=spec.get("args", []), program=opts.engine, env_fd=read_fd,
-                       run_id=secrets.token_hex(4))
+                       run_id=secrets.token_hex(4), egress_port=proxy.port if proxy else "")
     if opts.print_argv:
         print("argv:", json.dumps(argv))
     session = Session(argv, read_fd)
@@ -176,6 +233,8 @@ def main(argv=None) -> int:
         missing = [t for t in spec.get("expect_tools", []) if t not in names]
         report["checks"].append({"check": "tools/list", "ok": not missing, "missing": missing})
         ok &= not missing
+        if opts.tools_file:
+            ok &= check_tools_file(report, names, opts.tools_file)
         for call in [] if opts.list_only else spec.get("calls", []):
             arguments = substitute(call.get("arguments", {}), variables)
             started = time.monotonic()
@@ -196,6 +255,8 @@ def main(argv=None) -> int:
         report["exception"] = f"{type(exc).__name__}: {exc}"
     finally:
         report["stderr_tail"] = session.close()[-3000:]
+        if proxy is not None:
+            proxy.close()
     report["ok"] = bool(ok)
     print(json.dumps(report, indent=2))
     return 0 if ok else 1

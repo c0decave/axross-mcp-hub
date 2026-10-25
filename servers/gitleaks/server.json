@@ -1,0 +1,30 @@
+{
+  "id": "hub:gitleaks",
+  "name": "gitleaks",
+  "title": "gitleaks",
+  "description": "Finds secrets - API keys, tokens, passwords, private keys - in files and in the whole history of git repositories with gitleaks 8.30 and its built-in rules (or your .toml rules). Findings name rule, file, line, commit, author and date; secrets are redacted in the answer unless asked otherwise. Paths are read from the folder mounted at /work. No network.",
+  "category": "Security: Code & Secrets",
+  "tags": [
+    "security",
+    "secrets",
+    "gitleaks",
+    "git",
+    "credentials",
+    "code-audit"
+  ],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/gitleaks",
+  "page": "https://github.com/gitleaks/gitleaks",
+  "license": "MIT (MCP server, axross-mcp-hub; gitleaks) AND GPL-2.0 (git, Debian package)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-gitleaks",
+  "tag": "latest",
+  "mounts": [
+    {
+      "target": "/work",
+      "description": "The folder or repository to scan (read-only is enough)",
+      "required": true
+    }
+  ],
+  "network": "none",
+  "notes": "A scanned repository's own git configuration cannot make git run programs: textconv and external diff drivers, fsmonitor and hooks are switched off for every git call."
+}

@@ -2,8 +2,18 @@
   "schema": "axross-mcp-catalog",
   "version": 1,
   "title": "axross-mcp-hub",
-  "description": "Curated, audited, container-packaged MCP servers for authorized security work (reverse engineering, firmware and forensics, network recon, web, OSINT), built by https://github.com/c0decave/axross-mcp-hub and pinned by digest.",
-  "state": "pinned",
+  "description": "Curated, audited, container-packaged MCP servers for authorized security work (reverse engineering, firmware and forensics, network recon, web, OSINT, secrets, password cracking), built by https://github.com/c0decave/axross-mcp-hub and pinned by digest. PENDING: these images have no published digest yet. axross refuses every entry without a digest; scripts/make_catalog.py fills them from the first CI run.",
+  "state": "pending-digests",
+  "pending": [
+    "crtsh",
+    "exiftool",
+    "ffuf",
+    "floss",
+    "gitleaks",
+    "john",
+    "sleuthkit",
+    "tshark"
+  ],
   "entries": [
     {
       "id": "hub:binwalk",
@@ -70,6 +80,32 @@
       "notes": "Large binaries can exceed axross's 512 MiB container memory limit or the 300 s default timeout; capa_analyze takes a timeout of up to 3600 s."
     },
     {
+      "id": "hub:crtsh",
+      "name": "crtsh",
+      "title": "crt.sh (Certificate Transparency)",
+      "description": "Subdomains and certificates of a domain from the Certificate Transparency logs through crt.sh: every logged certificate for a domain and its subdomains with the unique host names they name, and a single certificate as PEM. Needs network: Allowlist with crt.sh:443 (axross's proxy; nothing else is reachable).",
+      "category": "Security: OSINT",
+      "tags": [
+        "security",
+        "osint",
+        "certificate-transparency",
+        "subdomains",
+        "crt.sh",
+        "recon"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/crtsh",
+      "page": "https://crt.sh/",
+      "license": "MIT (MCP server, axross-mcp-hub)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-crtsh",
+      "tag": "latest",
+      "network": "allowlist",
+      "hosts": [
+        "crt.sh:443"
+      ],
+      "notes": "Passive: only crt.sh is asked, the domain itself is never contacted. crt.sh is a free service that is sometimes slow or overloaded; the tool then says so."
+    },
+    {
       "id": "hub:dnstwist",
       "name": "dnstwist",
       "title": "dnstwist",
@@ -91,6 +127,154 @@
       "digest": "sha256:f0ddff8e315b11811adf789f8f202c66703e36f7efb14f4976b5393159fe44ef",
       "network": "full",
       "notes": "Without network dnstwist_permutations still works; dnstwist_scan then reports every domain as unresolved."
+    },
+    {
+      "id": "hub:exiftool",
+      "name": "exiftool",
+      "title": "ExifTool",
+      "description": "Reads the metadata of images, videos, audio, PDFs, Office documents and many other formats with ExifTool 13.25 (EXIF, IPTC, XMP, GPS, maker notes, ...), all tags or a chosen subset with wildcards. Files are read from the folder mounted at /work. Read-only: this build offers no writing or removing of metadata. No network.",
+      "category": "Security: Firmware & Forensics",
+      "tags": [
+        "security",
+        "forensics",
+        "osint",
+        "exiftool",
+        "metadata",
+        "exif"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/exiftool",
+      "page": "https://exiftool.org/",
+      "license": "MIT (MCP server, joshmsimpson/exiftool_mcp, patched) AND Artistic-1.0 OR GPL-1.0-or-later (ExifTool, Debian package)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-exiftool",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "The folder with the files to inspect (read-only is enough)",
+          "required": true
+        }
+      ],
+      "network": "none",
+      "notes": "Patched: requested tag names filter ExifTool's JSON in Python instead of becoming ExifTool options (upstream let a tag such as \"if\" run Perl code); the write and remove tools are removed."
+    },
+    {
+      "id": "hub:ffuf",
+      "name": "ffuf",
+      "title": "ffuf",
+      "description": "Web fuzzing with ffuf 2.1: directory and file discovery, virtual hosts, parameters and custom FUZZ positions, with status, size, word and line filters and bundled SecLists wordlists (common, raft-small-dirs, raft-small-files, subdomains-top1mil, params-top) or your own wordlists from /work. Needs network: Full (requests go to the target you name).",
+      "category": "Security: Web",
+      "tags": [
+        "security",
+        "web",
+        "ffuf",
+        "fuzzing",
+        "content-discovery",
+        "pentest"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/ffuf",
+      "page": "https://github.com/ffuf/ffuf",
+      "license": "MIT (MCP server, FuzzingLabs, patched; ffuf; SecLists)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-ffuf",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "Optional: a folder with your own wordlists (read-only is enough)"
+        }
+      ],
+      "network": "full",
+      "notes": "Fuzz only systems you are authorized to test. Every argument is validated; a wordlist is a bundled name or a file under /work, never another container path."
+    },
+    {
+      "id": "hub:floss",
+      "name": "floss",
+      "title": "FLOSS",
+      "description": "Mandiant FLOSS 3.2: extracts obfuscated strings from malware - static strings plus stack strings, tight strings and strings decoded by emulating the sample's decoding routines (vivisect; the sample is never executed) - from PE files and shellcode, language-aware for Go and Rust. Samples are read from the folder mounted at /work. No network.",
+      "category": "Security: Reverse Engineering",
+      "tags": [
+        "security",
+        "reverse-engineering",
+        "malware-analysis",
+        "floss",
+        "strings",
+        "mandiant"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/floss",
+      "page": "https://github.com/mandiant/flare-floss",
+      "license": "MIT (MCP server, axross-mcp-hub) AND Apache-2.0 (FLOSS, vivisect)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-floss",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "The folder with the samples (read-only is enough)",
+          "required": true
+        }
+      ],
+      "network": "none",
+      "notes": "Emulation of large samples is slow and memory-hungry; axross's 512 MiB limit applies - use only=[\"static\"] or a smaller timeout for big files."
+    },
+    {
+      "id": "hub:gitleaks",
+      "name": "gitleaks",
+      "title": "gitleaks",
+      "description": "Finds secrets - API keys, tokens, passwords, private keys - in files and in the whole history of git repositories with gitleaks 8.30 and its built-in rules (or your .toml rules). Findings name rule, file, line, commit, author and date; secrets are redacted in the answer unless asked otherwise. Paths are read from the folder mounted at /work. No network.",
+      "category": "Security: Code & Secrets",
+      "tags": [
+        "security",
+        "secrets",
+        "gitleaks",
+        "git",
+        "credentials",
+        "code-audit"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/gitleaks",
+      "page": "https://github.com/gitleaks/gitleaks",
+      "license": "MIT (MCP server, axross-mcp-hub; gitleaks) AND GPL-2.0 (git, Debian package)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-gitleaks",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "The folder or repository to scan (read-only is enough)",
+          "required": true
+        }
+      ],
+      "network": "none",
+      "notes": "A scanned repository's own git configuration cannot make git run programs: textconv and external diff drivers, fsmonitor and hooks are switched off for every git call."
+    },
+    {
+      "id": "hub:john",
+      "name": "john",
+      "title": "John the Ripper",
+      "description": "Password hash cracking with John the Ripper (bleeding-jumbo, CPU only): wordlist mode with rules (the bundled password.lst or your wordlist from /work), single crack and incremental mode, for a bounded time, with autodetected or chosen hash format; extract_hash turns protected zip, rar, PDF, Office, SSH key and KeePass files from /work into crackable hashes. No network.",
+      "category": "Security: Passwords & Crypto",
+      "tags": [
+        "security",
+        "passwords",
+        "john",
+        "hash-cracking",
+        "crypto",
+        "pentest"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/john",
+      "page": "https://www.openwall.com/john/",
+      "license": "MIT (MCP server, axross-mcp-hub) AND GPL-2.0-or-later with relaxed terms for components (John the Ripper jumbo; unRAR code under its own licence)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-john",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "Optional: wordlists and protected files (read-only is enough)"
+        }
+      ],
+      "network": "none",
+      "notes": "Crack only hashes you are authorized to crack. Hashes go to a private temporary file, never onto a command line; each run ends after max_seconds (at most 30 minutes), and the pot file is discarded with the run."
     },
     {
       "id": "hub:mcpcap",
@@ -199,6 +383,40 @@
       "notes": "radare2's own sandbox is on (no shell, no sockets, no file writes) and the raw run_command / run_javascript tools are off. The sql tool needs the r2xsql plugin, which is not included."
     },
     {
+      "id": "hub:sleuthkit",
+      "name": "sleuthkit",
+      "title": "The Sleuth Kit",
+      "description": "Disk image forensics with The Sleuth Kit 4.12: partition tables (mmls), file system details (fsstat), file listings including deleted entries (fls), inode metadata (istat), reading a file's content by inode (icat, also deleted files), extracting it to /out, and a MAC timeline (fls + mactime). Images (raw/dd, E01 where supported) are read from the folder mounted at /work. No network.",
+      "category": "Security: Firmware & Forensics",
+      "tags": [
+        "security",
+        "forensics",
+        "sleuthkit",
+        "disk-image",
+        "dfir",
+        "timeline"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/sleuthkit",
+      "page": "https://sleuthkit.org/",
+      "license": "MIT (MCP server, axross-mcp-hub) AND CPL-1.0, IPL-1.0 and others (The Sleuth Kit, Debian package; see its copyright file)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-sleuthkit",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "The folder with the disk images (read-only is enough)",
+          "required": true
+        },
+        {
+          "target": "/out",
+          "description": "A folder for extracted files (tick writable)"
+        }
+      ],
+      "network": "none",
+      "notes": "read_file returns at most 1 MiB of a file (text or hex); extract_file writes the whole file into /out and never overwrites. The image is only read."
+    },
+    {
       "id": "hub:sqlmap",
       "name": "sqlmap",
       "title": "sqlmap",
@@ -220,6 +438,36 @@
       "digest": "sha256:ba0ae22431afcc4d97959dfeab62ef3e6531aeec1fc40a6794b518461e329a7b",
       "network": "full",
       "notes": "sqlmap changes data on the target only through what you ask for (dump reads). Test only systems you are authorized to test."
+    },
+    {
+      "id": "hub:tshark",
+      "name": "tshark",
+      "title": "TShark (Wireshark)",
+      "description": "Packet capture analysis with Wireshark's TShark 4.4: capture summary (capinfos), protocol hierarchy, conversations, endpoints, packets with display filters and chosen fields, TCP/UDP/HTTP stream contents, HTTP requests, DNS queries and clear-text credentials. Captures (.pcap, .pcapng) are read from the folder mounted at /work. No network: TShark only reads files, never captures and never resolves names.",
+      "category": "Security: Firmware & Forensics",
+      "tags": [
+        "security",
+        "forensics",
+        "pcap",
+        "wireshark",
+        "tshark",
+        "network-analysis"
+      ],
+      "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/tshark",
+      "page": "https://www.wireshark.org/",
+      "license": "MIT (MCP server, axross-mcp-hub) AND GPL-2.0-or-later (Wireshark/TShark, Debian package)",
+      "kind": "oci",
+      "image": "ghcr.io/c0decave/axross-mcp-tshark",
+      "tag": "latest",
+      "mounts": [
+        {
+          "target": "/work",
+          "description": "The folder with the capture files (read-only is enough)",
+          "required": true
+        }
+      ],
+      "network": "none",
+      "notes": "Display filters and field names are validated and passed as single arguments; a capture is parsed by Wireshark's dissectors inside the container (no capabilities, no network)."
     },
     {
       "id": "hub:yara",

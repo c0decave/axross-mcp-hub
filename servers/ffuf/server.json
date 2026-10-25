@@ -1,0 +1,29 @@
+{
+  "id": "hub:ffuf",
+  "name": "ffuf",
+  "title": "ffuf",
+  "description": "Web fuzzing with ffuf 2.1: directory and file discovery, virtual hosts, parameters and custom FUZZ positions, with status, size, word and line filters and bundled SecLists wordlists (common, raft-small-dirs, raft-small-files, subdomains-top1mil, params-top) or your own wordlists from /work. Needs network: Full (requests go to the target you name).",
+  "category": "Security: Web",
+  "tags": [
+    "security",
+    "web",
+    "ffuf",
+    "fuzzing",
+    "content-discovery",
+    "pentest"
+  ],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/ffuf",
+  "page": "https://github.com/ffuf/ffuf",
+  "license": "MIT (MCP server, FuzzingLabs, patched; ffuf; SecLists)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-ffuf",
+  "tag": "latest",
+  "mounts": [
+    {
+      "target": "/work",
+      "description": "Optional: a folder with your own wordlists (read-only is enough)"
+    }
+  ],
+  "network": "full",
+  "notes": "Fuzz only systems you are authorized to test. Every argument is validated; a wordlist is a bundled name or a file under /work, never another container path."
+}

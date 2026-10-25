@@ -1,0 +1,12 @@
+{
+  "name": "gitleaks",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["scan_directory", "scan_git_history", "list_rules"],
+  "calls": [
+    {"tool": "scan_directory", "arguments": {"path": "/work/leaky.env"}, "expect": "github-pat"},
+    {"tool": "scan_git_history", "arguments": {"repository": "/work/repo"}, "expect": "github-pat"},
+    {"tool": "list_rules", "arguments": {}, "expect": "aws-access-token"},
+    {"tool": "scan_directory", "arguments": {"path": "/etc"}, "expect": "only paths under /work", "expect_error": true}
+  ]
+}

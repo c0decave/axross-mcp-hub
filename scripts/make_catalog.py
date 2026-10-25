@@ -37,7 +37,8 @@ VERSION = 1
 IMAGE_PREFIX = "ghcr.io/c0decave/axross-mcp-"
 TITLE = "axross-mcp-hub"
 DESCRIPTION = ("Curated, audited, container-packaged MCP servers for authorized security work "
-               "(reverse engineering, firmware and forensics, network recon, web, OSINT), "
+               "(reverse engineering, firmware and forensics, network recon, web, OSINT, secrets, "
+               "password cracking), "
                "built by https://github.com/c0decave/axross-mcp-hub and pinned by digest.")
 PENDING_NOTE = ("PENDING: these images have no published digest yet. axross refuses every entry "
                 "without a digest; scripts/make_catalog.py fills them from the first CI run.")

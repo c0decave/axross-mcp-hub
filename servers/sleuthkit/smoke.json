@@ -1,0 +1,15 @@
+{
+  "name": "sleuthkit",
+  "network": "none",
+  "mounts": [{"host": "${FIXTURES}", "target": "/work"}],
+  "expect_tools": ["partitions", "filesystem_info", "list_files", "file_metadata", "read_file", "extract_file", "timeline"],
+  "calls": [
+    {"tool": "filesystem_info", "arguments": {"image": "/work/disk.img"}, "expect": "FAT12"},
+    {"tool": "list_files", "arguments": {"image": "/work/disk.img", "recursive": true}, "expect": "_ONE.TXT"},
+    {"tool": "read_file", "arguments": {"image": "/work/disk.img", "inode": "4"}, "expect": "MCPHUB-TEST-MARKER kept file"},
+    {"tool": "read_file", "arguments": {"image": "/work/disk.img", "inode": "5"}, "expect": "MCPHUB-TEST-MARKER deleted file"},
+    {"tool": "timeline", "arguments": {"image": "/work/disk.img"}, "expect": "KEEP.TXT"},
+    {"tool": "read_file", "arguments": {"image": "/work/disk.img", "inode": "4; id"}, "expect": "inode: a number", "expect_error": true},
+    {"tool": "extract_file", "arguments": {"image": "/work/disk.img", "inode": "4", "name": "../x"}, "expect": "name: letters", "expect_error": true}
+  ]
+}

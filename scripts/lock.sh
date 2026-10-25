@@ -15,4 +15,8 @@ exec podman run --rm --cap-drop=ALL --security-opt=no-new-privileges --userns=ke
       echo "== $d"
       uv pip compile -q --no-cache --generate-hashes --universal --python-version 3.13 \
         --custom-compile-command "scripts/lock.sh" -o "$d/requirements.txt" "$d/requirements.in"
+      if [ -f "$d/requirements-build.in" ]; then
+        uv pip compile -q --no-cache --generate-hashes --universal --python-version 3.13 \
+          --custom-compile-command "scripts/lock.sh" -o "$d/requirements-build.txt" "$d/requirements-build.in"
+      fi
     done'

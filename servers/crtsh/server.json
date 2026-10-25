@@ -1,0 +1,26 @@
+{
+  "id": "hub:crtsh",
+  "name": "crtsh",
+  "title": "crt.sh (Certificate Transparency)",
+  "description": "Subdomains and certificates of a domain from the Certificate Transparency logs through crt.sh: every logged certificate for a domain and its subdomains with the unique host names they name, and a single certificate as PEM. Needs network: Allowlist with crt.sh:443 (axross's proxy; nothing else is reachable).",
+  "category": "Security: OSINT",
+  "tags": [
+    "security",
+    "osint",
+    "certificate-transparency",
+    "subdomains",
+    "crt.sh",
+    "recon"
+  ],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/crtsh",
+  "page": "https://crt.sh/",
+  "license": "MIT (MCP server, axross-mcp-hub)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-crtsh",
+  "tag": "latest",
+  "network": "allowlist",
+  "hosts": [
+    "crt.sh:443"
+  ],
+  "notes": "Passive: only crt.sh is asked, the domain itself is never contacted. crt.sh is a free service that is sometimes slow or overloaded; the tool then says so."
+}

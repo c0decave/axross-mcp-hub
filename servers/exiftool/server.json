@@ -1,0 +1,30 @@
+{
+  "id": "hub:exiftool",
+  "name": "exiftool",
+  "title": "ExifTool",
+  "description": "Reads the metadata of images, videos, audio, PDFs, Office documents and many other formats with ExifTool 13.25 (EXIF, IPTC, XMP, GPS, maker notes, ...), all tags or a chosen subset with wildcards. Files are read from the folder mounted at /work. Read-only: this build offers no writing or removing of metadata. No network.",
+  "category": "Security: Firmware & Forensics",
+  "tags": [
+    "security",
+    "forensics",
+    "osint",
+    "exiftool",
+    "metadata",
+    "exif"
+  ],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/exiftool",
+  "page": "https://exiftool.org/",
+  "license": "MIT (MCP server, joshmsimpson/exiftool_mcp, patched) AND Artistic-1.0 OR GPL-1.0-or-later (ExifTool, Debian package)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-exiftool",
+  "tag": "latest",
+  "mounts": [
+    {
+      "target": "/work",
+      "description": "The folder with the files to inspect (read-only is enough)",
+      "required": true
+    }
+  ],
+  "network": "none",
+  "notes": "Patched: requested tag names filter ExifTool's JSON in Python instead of becoming ExifTool options (upstream let a tag such as \"if\" run Perl code); the write and remove tools are removed."
+}

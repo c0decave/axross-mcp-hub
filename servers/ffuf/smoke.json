@@ -1,0 +1,9 @@
+{
+  "name": "ffuf",
+  "network": "full",
+  "expect_tools": ["ffuf_dir", "ffuf_vhost", "ffuf_param", "ffuf_custom", "list_wordlists"],
+  "calls": [
+    {"tool": "ffuf_dir", "arguments": {"url": "http://${TARGET_HOST}:${TARGET_PORT}/FUZZ", "wordlist": "common", "threads": 10}, "expect": "\"input\": \"admin\"", "timeout": 300},
+    {"tool": "ffuf_custom", "arguments": {"url": "http://${TARGET_HOST}:${TARGET_PORT}/FUZZ", "wordlist": "/etc/passwd"}, "expect": "wordlist: one of", "expect_error": true}
+  ]
+}

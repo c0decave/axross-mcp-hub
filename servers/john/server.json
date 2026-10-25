@@ -1,0 +1,29 @@
+{
+  "id": "hub:john",
+  "name": "john",
+  "title": "John the Ripper",
+  "description": "Password hash cracking with John the Ripper (bleeding-jumbo, CPU only): wordlist mode with rules (the bundled password.lst or your wordlist from /work), single crack and incremental mode, for a bounded time, with autodetected or chosen hash format; extract_hash turns protected zip, rar, PDF, Office, SSH key and KeePass files from /work into crackable hashes. No network.",
+  "category": "Security: Passwords & Crypto",
+  "tags": [
+    "security",
+    "passwords",
+    "john",
+    "hash-cracking",
+    "crypto",
+    "pentest"
+  ],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/john",
+  "page": "https://www.openwall.com/john/",
+  "license": "MIT (MCP server, axross-mcp-hub) AND GPL-2.0-or-later with relaxed terms for components (John the Ripper jumbo; unRAR code under its own licence)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-john",
+  "tag": "latest",
+  "mounts": [
+    {
+      "target": "/work",
+      "description": "Optional: wordlists and protected files (read-only is enough)"
+    }
+  ],
+  "network": "none",
+  "notes": "Crack only hashes you are authorized to crack. Hashes go to a private temporary file, never onto a command line; each run ends after max_seconds (at most 30 minutes), and the pot file is discarded with the run."
+}

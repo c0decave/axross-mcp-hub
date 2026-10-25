@@ -1,0 +1,34 @@
+{
+  "id": "hub:sleuthkit",
+  "name": "sleuthkit",
+  "title": "The Sleuth Kit",
+  "description": "Disk image forensics with The Sleuth Kit 4.12: partition tables (mmls), file system details (fsstat), file listings including deleted entries (fls), inode metadata (istat), reading a file's content by inode (icat, also deleted files), extracting it to /out, and a MAC timeline (fls + mactime). Images (raw/dd, E01 where supported) are read from the folder mounted at /work. No network.",
+  "category": "Security: Firmware & Forensics",
+  "tags": [
+    "security",
+    "forensics",
+    "sleuthkit",
+    "disk-image",
+    "dfir",
+    "timeline"
+  ],
+  "repository": "https://github.com/c0decave/axross-mcp-hub/tree/main/servers/sleuthkit",
+  "page": "https://sleuthkit.org/",
+  "license": "MIT (MCP server, axross-mcp-hub) AND CPL-1.0, IPL-1.0 and others (The Sleuth Kit, Debian package; see its copyright file)",
+  "kind": "oci",
+  "image": "ghcr.io/c0decave/axross-mcp-sleuthkit",
+  "tag": "latest",
+  "mounts": [
+    {
+      "target": "/work",
+      "description": "The folder with the disk images (read-only is enough)",
+      "required": true
+    },
+    {
+      "target": "/out",
+      "description": "A folder for extracted files (tick writable)"
+    }
+  ],
+  "network": "none",
+  "notes": "read_file returns at most 1 MiB of a file (text or hex); extract_file writes the whole file into /out and never overwrites. The image is only read."
+}
