@@ -1,4 +1,200 @@
 {
   "version": 1,
-  "rootfs": {}
+  "rootfs": {
+    "binwalk": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-binwalk-edcd0e9d04be/rootfs-binwalk.tar.gz",
+      "sha256": "edcd0e9d04be32e08b5a956a2575e11d737c137376e034a0218c49a59b422723",
+      "size": 58875718,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp",
+        "BINWALK_OUTPUT_DIR": "/tmp/binwalk-mcp"
+      }
+    },
+    "capa": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-capa-c435264d0470/rootfs-capa.tar.gz",
+      "sha256": "c435264d047084d3009edfa3087abef86c6800c40682b6db76def615a7788fd6",
+      "size": 102865698,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp",
+        "CAPA_RULES_DIR": "/opt/capa/rules",
+        "CAPA_SIGS_DIR": "/opt/capa/sigs",
+        "CAPA_OUTPUT_DIR": "/tmp/capa-mcp"
+      }
+    },
+    "dnstwist": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-dnstwist-a1048a96eeed/rootfs-dnstwist.tar.gz",
+      "sha256": "a1048a96eeedc375e4848cc6853fc3a9b83945b49355f795d06f0ddf14fc3316",
+      "size": 55624821,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "exiftool": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-exiftool-0adf208c1cc2/rootfs-exiftool.tar.gz",
+      "sha256": "0adf208c1cc2e5725a1acf577657e5efb1c9739a1acfe271a2e9f8a846f898e9",
+      "size": 71923559,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "floss": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-floss-ec3f6f309fdb/rootfs-floss.tar.gz",
+      "sha256": "ec3f6f309fdb78ab8ef5f88bd3a873fbc8a07b85f6a82e51d77b9c96c96c42a5",
+      "size": 91464490,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "gitleaks": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-gitleaks-bf30560b421c/rootfs-gitleaks.tar.gz",
+      "sha256": "bf30560b421c38e7361503dfead27e3ad988767963f3dbdfc3c0a86be72a63d7",
+      "size": 95244385,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "john": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-john-1f0b5f4ef60b/rootfs-john.tar.gz",
+      "sha256": "1f0b5f4ef60be3202d828504dd758a8960fde5f7bfccbc0043674eaa542fd93d",
+      "size": 111693572,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp",
+        "OMP_NUM_THREADS": "4"
+      }
+    },
+    "mcpcap": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-mcpcap-538e62761837/rootfs-mcpcap.tar.gz",
+      "sha256": "538e627618377d2bebc9d589cad2c9ef044970b39e6253dae8a90c7c68f74a11",
+      "size": 76359772,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "-m",
+        "mcpcap.cli"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "sleuthkit": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-sleuthkit-3de8f37561ee/rootfs-sleuthkit.tar.gz",
+      "sha256": "3de8f37561ee78bf12f6ec809bc68c0d0aa670b0f8357de71d94bb4f41321149",
+      "size": 76894579,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "tshark": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-tshark-0d3fa21aa3f3/rootfs-tshark.tar.gz",
+      "sha256": "0d3fa21aa3f3f5e0f1b014bc7b4bd41909b976f7305268a1c685f33278d60784",
+      "size": 99911086,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "yara": {
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-yara-924574b616c7/rootfs-yara.tar.gz",
+      "sha256": "924574b616c7f334d164c2d7cb88e4ef5c63d83e75773ff77e87f8b63d159eb7",
+      "size": 56346130,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp",
+        "YARA_RULES_DIR": "/opt/yara/rules",
+        "YARA_OUTPUT_DIR": "/tmp/yara-mcp"
+      }
+    }
+  }
 }

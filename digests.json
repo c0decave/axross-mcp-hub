@@ -1,22 +1,241 @@
 {
   "comment": "Digests of the images ghcr.io/c0decave/axross-mcp-<name>, written by scripts/make_catalog.py --ci-digests <digest files of a CI run> --write-digests. null = not published yet: catalog.json then carries that entry without a digest and axross refuses it.",
   "images": {
-    "binwalk": "sha256:e31cd7d3cb5d3e19e32a3bc9445edfbace35f84291ee348cc0f00e74356ca9f5",
-    "capa": "sha256:08024a9bd1deb92ffb1ef486e09425e6f6273a6ce3fc9581d0f6cc507afced7e",
-    "crtsh": "sha256:1dc2db8d56b1c61cb35ae14714ec3733907bb557464f5f27763dd0375d57389a",
-    "dnstwist": "sha256:5e3ab2ce5945457d1cae5c9991ec2d5714b91b420173401a874c42de164c7f31",
-    "exiftool": "sha256:a37f9e87c9f98f17a9d36bb69397b58238233ffce5c1119afb841798b0115959",
-    "ffuf": "sha256:ad322c98ce3b825902c4f044f666cfedb8e951c8cde6d09a9965253e5c4b008f",
-    "floss": "sha256:53d4388fe61a26240a05df3884509555c8f483f47c54f0d42eac04ce38427c46",
-    "gitleaks": "sha256:1e911eb737c36a82bdb3827612155ab0665e4e93766903e3ff0a61d800b10a54",
-    "john": "sha256:9299473b2c58dcab14fffed9fcd12f799d7bd7aec2d5760615ecaae150afbe40",
-    "mcpcap": "sha256:370c6b6ad965da321fea0ecc5953261648061d709fee90a8eeca4234fdc89127",
-    "nmap": "sha256:bcdddace714f116aa88601a83a075791843117073f7eb7a5bb079111f96b7d47",
-    "nuclei": "sha256:33a7eec075b8da465494115b377714e1c226fe37ea4ece3d56efe1aee2062016",
-    "radare2": "sha256:0da8157a518f32fb4b28e7c32af1bda7358c434e875b05a17a44793716697a43",
-    "sleuthkit": "sha256:af88a4326563eb37ee32516a6c76c18ec058a12a16d350c46a5bb310bf9c2d47",
-    "sqlmap": "sha256:38cb2d0bf81801444b18812286a31935fad92fc208629de38fb232677d22fd48",
-    "tshark": "sha256:bcdc508f69ed5ac060e4564405735b9e943dba374b5770f161c12e92579500f3",
-    "yara": "sha256:4b9e36a21d05922fc52260688601232248e60ecaa1007126329c4623c4b3262f"
+    "binwalk": "sha256:95c8e286aa634d3b2db6078c7457c89ae80358af4e0882977ee2cc4efbd7d623",
+    "capa": "sha256:a3e2b1ea6622a15352d11cbd661888ee5e7983878cda81350a045ff19170fb6a",
+    "crtsh": null,
+    "dnstwist": "sha256:6796a60528fd0dfc4e71a78fb6700af55dab7396d6923620aa6b8a91db5cc1ff",
+    "exiftool": "sha256:2607d31de39a8901650957b3810f2d45cdba034b6d0d0e4114df2670f6925d65",
+    "ffuf": "sha256:e5390759eebdb8c747e9cc646de6e0a0d88943ab056cf1d034e6416013835bdd",
+    "floss": "sha256:7c6fe12ba4a0f5941dabb7c75f2fcb4e62fcd2d1442efc90670c8f08a7860953",
+    "gitleaks": "sha256:8718349cf7fd0be466e5f304118c07f3e15a939d106b76b54e558dade4fcfeb3",
+    "john": "sha256:ba35ab2fad47036b72ca4cfa6af7c955ff4ada6d2e664a15d940243a2ea5f7c0",
+    "mcpcap": "sha256:0763b5f4a50745ba100f6a997266a1f40d35ad6507ff8e532f34ee1d696814f4",
+    "nmap": null,
+    "nuclei": "sha256:ee88adc942943250a148fe00730f563646d01d38779f663615289a9965d72f14",
+    "radare2": "sha256:cfa49731fd1f5e4df31ede27d8cba8276f469660b23567350453515445ba13e3",
+    "sleuthkit": "sha256:fb9bfebd814193205d35f39135f32848d1b88c7e2964658518cac631c1543c6b",
+    "sqlmap": "sha256:8bdad4aabf4caf9722f936e8432dea5bd0525be496281d7ea2b1bd51bcf39565",
+    "tshark": "sha256:26af9d5d9326feefe80b6cfaee9b131dd8485ec7ee8d32dbbc3f5fbb70656d9a",
+    "yara": "sha256:c28aa0117e472cd47471dc651fd613e1a646ef4cefb2c67d0131c79c881f5044"
+  },
+  "rootfs": {
+    "binwalk": {
+      "name": "binwalk",
+      "image": "ghcr.io/c0decave/axross-mcp-binwalk@sha256:95c8e286aa634d3b2db6078c7457c89ae80358af4e0882977ee2cc4efbd7d623",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-binwalk-edcd0e9d04be/rootfs-binwalk.tar.gz",
+      "sha256": "edcd0e9d04be32e08b5a956a2575e11d737c137376e034a0218c49a59b422723",
+      "size": 58875718,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp",
+        "BINWALK_OUTPUT_DIR": "/tmp/binwalk-mcp"
+      }
+    },
+    "capa": {
+      "name": "capa",
+      "image": "ghcr.io/c0decave/axross-mcp-capa@sha256:a3e2b1ea6622a15352d11cbd661888ee5e7983878cda81350a045ff19170fb6a",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-capa-c435264d0470/rootfs-capa.tar.gz",
+      "sha256": "c435264d047084d3009edfa3087abef86c6800c40682b6db76def615a7788fd6",
+      "size": 102865698,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp",
+        "CAPA_RULES_DIR": "/opt/capa/rules",
+        "CAPA_SIGS_DIR": "/opt/capa/sigs",
+        "CAPA_OUTPUT_DIR": "/tmp/capa-mcp"
+      }
+    },
+    "dnstwist": {
+      "name": "dnstwist",
+      "image": "ghcr.io/c0decave/axross-mcp-dnstwist@sha256:6796a60528fd0dfc4e71a78fb6700af55dab7396d6923620aa6b8a91db5cc1ff",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-dnstwist-a1048a96eeed/rootfs-dnstwist.tar.gz",
+      "sha256": "a1048a96eeedc375e4848cc6853fc3a9b83945b49355f795d06f0ddf14fc3316",
+      "size": 55624821,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "exiftool": {
+      "name": "exiftool",
+      "image": "ghcr.io/c0decave/axross-mcp-exiftool@sha256:2607d31de39a8901650957b3810f2d45cdba034b6d0d0e4114df2670f6925d65",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-exiftool-0adf208c1cc2/rootfs-exiftool.tar.gz",
+      "sha256": "0adf208c1cc2e5725a1acf577657e5efb1c9739a1acfe271a2e9f8a846f898e9",
+      "size": 71923559,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "floss": {
+      "name": "floss",
+      "image": "ghcr.io/c0decave/axross-mcp-floss@sha256:7c6fe12ba4a0f5941dabb7c75f2fcb4e62fcd2d1442efc90670c8f08a7860953",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-floss-ec3f6f309fdb/rootfs-floss.tar.gz",
+      "sha256": "ec3f6f309fdb78ab8ef5f88bd3a873fbc8a07b85f6a82e51d77b9c96c96c42a5",
+      "size": 91464490,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "gitleaks": {
+      "name": "gitleaks",
+      "image": "ghcr.io/c0decave/axross-mcp-gitleaks@sha256:8718349cf7fd0be466e5f304118c07f3e15a939d106b76b54e558dade4fcfeb3",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-gitleaks-bf30560b421c/rootfs-gitleaks.tar.gz",
+      "sha256": "bf30560b421c38e7361503dfead27e3ad988767963f3dbdfc3c0a86be72a63d7",
+      "size": 95244385,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "john": {
+      "name": "john",
+      "image": "ghcr.io/c0decave/axross-mcp-john@sha256:ba35ab2fad47036b72ca4cfa6af7c955ff4ada6d2e664a15d940243a2ea5f7c0",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-john-1f0b5f4ef60b/rootfs-john.tar.gz",
+      "sha256": "1f0b5f4ef60be3202d828504dd758a8960fde5f7bfccbc0043674eaa542fd93d",
+      "size": 111693572,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp",
+        "OMP_NUM_THREADS": "4"
+      }
+    },
+    "mcpcap": {
+      "name": "mcpcap",
+      "image": "ghcr.io/c0decave/axross-mcp-mcpcap@sha256:0763b5f4a50745ba100f6a997266a1f40d35ad6507ff8e532f34ee1d696814f4",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-mcpcap-538e62761837/rootfs-mcpcap.tar.gz",
+      "sha256": "538e627618377d2bebc9d589cad2c9ef044970b39e6253dae8a90c7c68f74a11",
+      "size": 76359772,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "-m",
+        "mcpcap.cli"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "sleuthkit": {
+      "name": "sleuthkit",
+      "image": "ghcr.io/c0decave/axross-mcp-sleuthkit@sha256:fb9bfebd814193205d35f39135f32848d1b88c7e2964658518cac631c1543c6b",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-sleuthkit-3de8f37561ee/rootfs-sleuthkit.tar.gz",
+      "sha256": "3de8f37561ee78bf12f6ec809bc68c0d0aa670b0f8357de71d94bb4f41321149",
+      "size": 76894579,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "tshark": {
+      "name": "tshark",
+      "image": "ghcr.io/c0decave/axross-mcp-tshark@sha256:26af9d5d9326feefe80b6cfaee9b131dd8485ec7ee8d32dbbc3f5fbb70656d9a",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-tshark-0d3fa21aa3f3/rootfs-tshark.tar.gz",
+      "sha256": "0d3fa21aa3f3f5e0f1b014bc7b4bd41909b976f7305268a1c685f33278d60784",
+      "size": 99911086,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp"
+      }
+    },
+    "yara": {
+      "name": "yara",
+      "image": "ghcr.io/c0decave/axross-mcp-yara@sha256:c28aa0117e472cd47471dc651fd613e1a646ef4cefb2c67d0131c79c881f5044",
+      "url": "https://github.com/c0decave/axross-mcp-hub/releases/download/rootfs-yara-924574b616c7/rootfs-yara.tar.gz",
+      "sha256": "924574b616c7f334d164c2d7cb88e4ef5c63d83e75773ff77e87f8b63d159eb7",
+      "size": 56346130,
+      "entrypoint": [
+        "/opt/venv/bin/python",
+        "-I",
+        "-u",
+        "/opt/mcp/server.py"
+      ],
+      "user": 10001,
+      "workdir": "/tmp",
+      "env": {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/tmp",
+        "YARA_RULES_DIR": "/opt/yara/rules",
+        "YARA_OUTPUT_DIR": "/tmp/yara-mcp"
+      }
+    }
   }
 }
