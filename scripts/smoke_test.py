@@ -20,6 +20,12 @@ ones, so a changed tool list fails.
 
 ``${NAME}`` in the spec is replaced by ``--var NAME=VALUE``. Exit status 0 when every
 check passed. Standard library only.
+
+``sandbox_ai_argv`` starts a server the way sandbox-ai does instead, with a sandbox-ai checkout's
+own code: its ``mcp.image_command`` for the image (Podman), or its ``mcp_rootfs`` for the image's
+rootfs archive (checked against its SHA-256, unpacked, run with bwrap).
+``scripts/axross_smoke.py --runner sandbox-ai-podman|sandbox-ai-bwrap`` runs the hub's smoke spec
+with it and writes the reports ``scripts/sign_catalog.py`` signs by.
 """
 
 from __future__ import annotations
@@ -109,10 +115,76 @@ def substitute(value, variables: dict[str, str]):
     return value
 
 
+def load_module(path, name):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def sandbox_ai_argv(runner: str, checkout: str, image: str, network: str, mounts, env: dict,
+                    rootfs: str | None = None, meta: dict | None = None) -> tuple[list[str], dict, dict]:
+    """(argv, environment, facts) of a server started as sandbox-ai starts it: the image with sandbox-ai's own
+    run line (``mcp.image_command``, *runner* sandbox-ai-podman), or the rootfs archive *rootfs* with its
+    ``rootfs-<name>.json`` *meta* checked, unpacked and run with bwrap (``mcp_rootfs``, sandbox-ai-bwrap).
+    sandbox-ai has no allowlist for image servers: an allowlist entry gets the full network."""
+    import tempfile
+    state = tempfile.mkdtemp(prefix="smoke-sandbox-ai-")
+    if runner != "sandbox-ai-podman":
+        # the rootfs store of the bwrap runner lives below XDG_DATA_HOME: a fresh one per smoke run. Never for
+        # Podman: rootless podman keeps its images below XDG_DATA_HOME too, and a fresh one would not hold the
+        # image the workflow has just pulled ("image not known").
+        os.environ.setdefault("XDG_DATA_HOME", os.path.join(state, "data"))
+    mcp = load_module(os.path.join(checkout, "sandbox", "mcp.py"), "sandbox_ai_mcp_for_smoke")
+    definition = {"network": "full" if network in ("full", "allowlist") else "none", "env": sorted(env),
+                  "mounts": [{"target": target, "host": host, "mode": "rw" if writable else "ro"}
+                             for host, target, writable in mounts]}
+    environment = {**os.environ, **env}
+    if runner == "sandbox-ai-podman":
+        definition = mcp.validated_image({**definition, "image": image}, "smoke")
+        return mcp.image_command(definition), environment, {"image": image}
+    if runner != "sandbox-ai-bwrap":
+        raise ValueError(f"runner: sandbox-ai-podman or sandbox-ai-bwrap, not {runner}")
+    rootfs_module = mcp.rootfs_module()
+    meta = meta or {}
+    tree = rootfs_module.install(os.path.abspath(rootfs), meta["sha256"])
+    definition = mcp.validated_image({**definition, "rootfs": {
+        "path": str(tree), "sha256": meta["sha256"], "entrypoint": meta["entrypoint"],
+        "user": meta.get("user", 65534), "workdir": meta.get("workdir", "/tmp"), "env": meta.get("env", {})}},
+        "smoke")
+    checked = os.path.join(state, "definition.json")
+    with open(checked, "w", encoding="utf-8") as handle:
+        json.dump(definition, handle)
+    return rootfs_module.bwrap_command(checked, definition), environment, {"rootfs_sha256": meta["sha256"]}
+
+
+def escape_annotation(text: str) -> str:
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+def annotation(report: dict) -> str:
+    """A GitHub Actions error annotation for a failed smoke run: the exception, the failed checks and the end of
+    stderr, so the reason can be read from the check run without the job log."""
+    lines = [f"runner {report.get('runner')}, image {report.get('image')}"]
+    if report.get("exception"):
+        lines.append(f"exception: {report['exception']}")
+    for check in report.get("checks", []):
+        if not check.get("ok"):
+            lines.append(f"failed: {check.get('check')} expected {check.get('expect', check.get('missing'))!r}, "
+                         f"got {str(check.get('text', ''))[:300]!r}")
+    tail = str(report.get("stderr_tail") or "").strip()
+    if tail:
+        lines.append("stderr: " + tail[-1500:])
+    return (f"::error title=smoke {report.get('name')} ({report.get('runner')})::"
+            f"{escape_annotation(chr(10).join(lines))}")
+
+
 class Session:
-    def __init__(self, argv: list[str], env_fd: int) -> None:
+    def __init__(self, argv: list[str], env_fd: int | None, env: dict | None = None) -> None:
         self.proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE, pass_fds=(env_fd,))
+                                     stderr=subprocess.PIPE,
+                                     pass_fds=(env_fd,) if env_fd is not None else (), env=env)
         self.sel = selectors.DefaultSelector()
         self.sel.register(self.proc.stdout, selectors.EVENT_READ)
         self.buf = b""

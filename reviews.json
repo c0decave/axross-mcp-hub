@@ -1,0 +1,169 @@
+{
+  "comment": "The review state of every server, read by scripts/sign_catalog.py and scripts/ci_results.py. Only servers whose shipped MCP server code we reviewed completely ourselves, for backdoors and bad code, are signed for sandbox-ai; a server not reviewed, or changed since its review, stays pending in the signed catalog. files: SHA-256 of what decides the image (Dockerfile, requirements*.txt, src/) at the review; after reviewing a change: scripts/sign_catalog.py --record-review NAME. Marking a server reviewed is an edit of this file together with its record (docs/SIGNING.md).",
+  "version": 1,
+  "servers": {
+    "binwalk": {
+      "reviewed": true,
+      "record": "servers/binwalk/PROVENANCE.md",
+      "mcp_code": "servers/binwalk/src/server.py (729 lines), the whole MCP server of the image: FuzzingLabs mcp-security-hub binary-analysis/binwalk-mcp/server.py at 0409a54, patched; the upstream file was read in full, its findings and the whole patch as a diff are in the record",
+      "files": {
+        "Dockerfile": "42eb4c08615b42ce46251ce8859248141d6c9757f275912139fb0f5f03765aa2",
+        "requirements.txt": "09cf1a0d52a94a16810b3f8f7f1fb00d00f98e69283d8837e35cf237fb6f579c",
+        "src/server.py": "b642114256765d9909401fd4574273604ae732f8d47774a50230f97b4fedf138"
+      }
+    },
+    "capa": {
+      "reviewed": true,
+      "record": "servers/capa/PROVENANCE.md",
+      "mcp_code": "servers/capa/src/server.py (365 lines), the whole MCP server of the image: FuzzingLabs mcp-security-hub binary-analysis/capa-mcp/server.py at 0409a54, patched; the upstream file was read in full, its findings and the whole patch as a diff are in the record",
+      "files": {
+        "Dockerfile": "5f29502aa3db16b9597bd4dcb7c07b3823feb82d594781d9d98803c95e195edd",
+        "requirements.txt": "a0bb99e9767d23098798f44bd01bb39904c84eb1d4199594140e0704e43a9931",
+        "src/server.py": "06f92f1ffe108c9a3a251c93a3f987bf3bf92d5687382301eff249b434143f2d"
+      }
+    },
+    "crtsh": {
+      "reviewed": true,
+      "record": "servers/crtsh/PROVENANCE.md",
+      "mcp_code": "servers/crtsh/src/server.py (130 lines), the whole MCP server of the image: own server of this repository; written and read in full here, its audit is in the record",
+      "files": {
+        "Dockerfile": "40c9bed675dc45f9c9496aea59a8a9800d0352c57446a97b1f1221b10a36fb87",
+        "requirements.txt": "12cad270e326caa0688036ed784767d8b48c9a6ffc9eb28127bb1cba5d26fbe1",
+        "src/server.py": "8e298b9ac9d56ba34f2885f6fc5ca36222f4b38659fac8e24e6f5d3170925e42"
+      }
+    },
+    "dnstwist": {
+      "reviewed": true,
+      "record": "servers/dnstwist/PROVENANCE.md",
+      "mcp_code": "servers/dnstwist/src/server.py (161 lines), the whole MCP server of the image: own server of this repository; written and read in full here, its audit is in the record",
+      "files": {
+        "Dockerfile": "e1b06f931b6f70476055634a4ad8157fbeb087d8600cb4c3e7746e4cb3db5544",
+        "requirements.txt": "80a6dc4359f39d8e190035bb9c4d20fc61ebcee773eef7c5e80c28077e383708",
+        "src/server.py": "ff8f5e9f28602e09cfcf922efe6a96c66cafcfdc78a8f732ae5df90352bdc3c0"
+      }
+    },
+    "exiftool": {
+      "reviewed": true,
+      "record": "servers/exiftool/PROVENANCE.md",
+      "mcp_code": "servers/exiftool/src/server.py (243 lines), the whole MCP server of the image: joshmsimpson/exiftool_mcp src/exiftool_mcp/server.py at b830315, patched (write and remove tools taken out); the upstream file was read in full, its findings and the whole patch as a diff are in the record",
+      "files": {
+        "Dockerfile": "bf928061fef9b408f632cfbb2f8b2d3b97205cb4a08d0514c2014bbd1c1fe8e5",
+        "requirements.txt": "e934c650d49aca33ca1b29d65b88eb7161ce8aa0fcc3e7dcb7f583bf7452cd66",
+        "src/server.py": "60207e45d42c6732776eb0432455f7b5390c19f31b336224353a9a04fbbd3d72"
+      }
+    },
+    "ffuf": {
+      "reviewed": true,
+      "record": "servers/ffuf/PROVENANCE.md",
+      "mcp_code": "servers/ffuf/src/server.py (877 lines), the whole MCP server of the image: FuzzingLabs mcp-security-hub web-security/ffuf-mcp/server.py at 0409a54, patched; the upstream file was read in full, its findings and the whole patch as a diff are in the record",
+      "files": {
+        "Dockerfile": "1b90d67977b37bb70fe645256dfbcf59cf21e88ea58e0eb6c19e3d60210b7536",
+        "requirements.txt": "c61f9ff1b3f1461f28482170c5807c2b93fddef78b7344d08e27e4c9e61c0bac",
+        "src/server.py": "7840f109354d1cc6ac91c7969e3d8e0f56fd4d33653729c7eb6b57942b2b249b"
+      }
+    },
+    "floss": {
+      "reviewed": true,
+      "record": "servers/floss/PROVENANCE.md",
+      "mcp_code": "servers/floss/src/server.py (174 lines), the whole MCP server of the image: own server of this repository; written and read in full here, its audit is in the record",
+      "files": {
+        "Dockerfile": "675adb73cde13b403aa9296c276181e8b6581c9b512963776bedfc9b52a063da",
+        "requirements-build.txt": "dea9d82f3391261706428365148fda3f655de0949382a3b6d8d1a58d50a43502",
+        "requirements.txt": "5a2a4e3d7281906d7b4448da9b9e61779b1ac6d8b425a78dfc50031862d12bee",
+        "src/server.py": "a6f3597f31d03615d3bcd20108936eae5c26acdfb92c5a46ea4794fb750eb669"
+      }
+    },
+    "gitleaks": {
+      "reviewed": true,
+      "record": "servers/gitleaks/PROVENANCE.md",
+      "mcp_code": "servers/gitleaks/src/server.py (217 lines), the whole MCP server of the image: own server of this repository; written and read in full here, its audit is in the record",
+      "files": {
+        "Dockerfile": "76fe5978ad2d610f99e2f4502dff00e2e22f0b38fa9f783062c468adedbc340a",
+        "requirements.txt": "892d17733e77cf19ae0f6d5ede6dd54b74b4d9c48ed4bcb68e570e6468a9eb66",
+        "src/server.py": "fe7b74660b7ff5751b638d75d494a2aa8240cce662400c2b5a61ae21ddc1b4e1"
+      }
+    },
+    "john": {
+      "reviewed": true,
+      "record": "servers/john/PROVENANCE.md",
+      "mcp_code": "servers/john/src/server.py (226 lines), the whole MCP server of the image: own server of this repository; written and read in full here, its audit is in the record",
+      "files": {
+        "Dockerfile": "c58039ad6e878f0a6135dbea9adcc13e78c42fff9d38888dcc065f4072910fbe",
+        "requirements.txt": "183855794e8026fa34f5ef0606043b79edb08495ea4fcab8501cf8d297e7e398",
+        "src/server.py": "b883e9f5a0c359ffdc8e3251ec06842cd1f1f074e4047564df5de51ca68fd771"
+      }
+    },
+    "mcpcap": {
+      "reviewed": false,
+      "record": "servers/mcpcap/PROVENANCE.md",
+      "mcp_code": "mcpcap 0.10.0 (github.com/mcpcap/mcpcap at 0b7af6b2), its whole src/mcpcap package (13 modules, 3,049 lines of Python), fetched at build time and shipped unpatched, on fastmcp 3.2.0",
+      "missing": "a record that every shipped module was read in full for backdoors and bad code: the record lists the tools and checked behaviour (no subprocess, shell or eval) but no file-by-file review and no finding on backdoors; its findings are not handled either (any *.pcap path in the container is read, not only /work; a URL is downloaded when the network is granted)"
+    },
+    "nmap": {
+      "reviewed": true,
+      "record": "servers/nmap/PROVENANCE.md",
+      "mcp_code": "servers/nmap/src/server.py (722 lines), the whole MCP server of the image: FuzzingLabs mcp-security-hub reconnaissance/nmap-mcp/server.py at 0409a54, patched; the upstream file was read in full, its findings and the whole patch as a diff are in the record",
+      "files": {
+        "Dockerfile": "bba19d8434388d4c3e54954474cb450afc7eb0cdaa1f845f70c707745da38502",
+        "requirements.txt": "dc4614924bca247e6c60354a6ae347181fa3b5fdbdc6e54632bbe94730a2f41d",
+        "src/server.py": "995c73c1966eb39d9461b3c46708ee12cd52dac49d29c5774a64fe53bd1a0ab3"
+      }
+    },
+    "nuclei": {
+      "reviewed": true,
+      "record": "servers/nuclei/PROVENANCE.md",
+      "mcp_code": "servers/nuclei/src/server.py (734 lines), the whole MCP server of the image: FuzzingLabs mcp-security-hub web-security/nuclei-mcp/server.py at 0409a54, patched; the upstream file was read in full, its findings and the whole patch as a diff are in the record",
+      "files": {
+        "Dockerfile": "ccc93ca7b156da0efce7f5c81979c2bc4fafc72bdb702c5b8d3f4ebc3961f8df",
+        "requirements.txt": "6600fcd12e572d116ee52d6ddc83ad9ec2bcf768a23ccc7482b9a53cc67d209e",
+        "src/server.py": "0aecf75273b0a54c0e5dd31eec09ead559d7ba7739e948fda9d0c4c37f7a5613"
+      }
+    },
+    "radare2": {
+      "reviewed": false,
+      "record": "servers/radare2/PROVENANCE.md",
+      "mcp_code": "r2mcp 1.9.0 (github.com/radareorg/radare2-mcp at 562c0cf2), 24 C source files (about 6,100 lines), fetched and built at build time, shipped unpatched",
+      "missing": "a record that r2mcp's sources were read in full for backdoors and bad code: the record shows how tool arguments reach radare2, which tools stay off and that -s /work and -g none hold (with a negative control), but no file-by-file review and no finding on backdoors"
+    },
+    "sleuthkit": {
+      "reviewed": true,
+      "record": "servers/sleuthkit/PROVENANCE.md",
+      "mcp_code": "servers/sleuthkit/src/server.py (291 lines), the whole MCP server of the image: own server of this repository; written and read in full here, its audit is in the record",
+      "files": {
+        "Dockerfile": "68281bde95b7905380420cbe6f6bf4015ef4c500c84f5a38a6d4b4fee8f22eda",
+        "requirements.txt": "1151f616bdf3f43549c4f70af42dbeb0d2768e6d75b7f1ba235ca1861713cb29",
+        "src/server.py": "326d70e949b3d97da5011c21f0e504d26f042f74f6e66a97496150364f804441"
+      }
+    },
+    "sqlmap": {
+      "reviewed": true,
+      "record": "servers/sqlmap/PROVENANCE.md",
+      "mcp_code": "servers/sqlmap/src/server.py (774 lines), the whole MCP server of the image: FuzzingLabs mcp-security-hub web-security/sqlmap-mcp/server.py at 0409a54, patched; the upstream file was read in full, its findings and the whole patch as a diff are in the record",
+      "files": {
+        "Dockerfile": "6b50650e1cbd3864c3c3064685564fd59ced83f33fbf9206af2ba1fc73b90f88",
+        "requirements.txt": "b5aaba09b2788d7a0485f3568d42e3e78f4055d7191191c62755cea29fbce379",
+        "src/server.py": "61a2b6a8d59999b9c460a793d83e5d68e1466014e70b1f1018b0b3c3ac82c43a"
+      }
+    },
+    "tshark": {
+      "reviewed": true,
+      "record": "servers/tshark/PROVENANCE.md",
+      "mcp_code": "servers/tshark/src/server.py (290 lines), the whole MCP server of the image: own server of this repository; written and read in full here, its audit is in the record",
+      "files": {
+        "Dockerfile": "9dd2d34d44306e419f6c1f57ad2e5b0bdc405fec5646d3c58d109526fd31f82b",
+        "requirements.txt": "57d6df8b2dee2330357cb99af05e474671e52c9f8d2edd41267bef58fbe61ef0",
+        "src/server.py": "52d294333ac8509bd26c053d2b6098a234ec8926c7d29cfe3e011962fcd864b3"
+      }
+    },
+    "yara": {
+      "reviewed": true,
+      "record": "servers/yara/PROVENANCE.md",
+      "mcp_code": "servers/yara/src/server.py (651 lines), the whole MCP server of the image: FuzzingLabs mcp-security-hub binary-analysis/yara-mcp/server.py at 0409a54, patched; the upstream file was read in full, its findings and the whole patch as a diff are in the record",
+      "files": {
+        "Dockerfile": "e836324397dfa02832db411f1d818436e3b886fe7a626dcee98393ba36914ced",
+        "requirements.txt": "2026ce235e5847e162016bf4f29a2908cb5c3a1579040ff8c931bb3848c72c5b",
+        "src/server.py": "5ba6ba8ec413b293e526b1c969ee5f70ed00b88a79e1e765cf653a4a6a127d80"
+      }
+    }
+  }
+}

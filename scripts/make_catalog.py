@@ -11,15 +11,31 @@ the catalog says ``"state": "pending-digests"``, and axross refuses that entry
 
     scripts/make_catalog.py                       # write catalog.json from digests.json
     scripts/make_catalog.py --ci-digests DIR --write-digests   # take a CI run's digests
+    scripts/make_catalog.py --ci-digests DIR --only NAME... --write-digests   # only the servers that passed
     scripts/make_catalog.py --check               # catalog.json up to date and pinned?
     scripts/make_catalog.py --check --allow-pending --axross /path/to/axross
+    scripts/make_catalog.py --check --allow-pending --sandbox-ai /path/to/sandbox-ai
+
+rootfs.json beside it has the Bubblewrap form of each published server for sandbox-ai (the
+``rootfs-<name>.json`` files the build workflow uploads, kept in digests.json's ``"rootfs"``): the
+archive's URL and SHA-256, built from the very image digest the catalog pins, and what runs it. A
+file of its own, since axross takes no keys it does not know; scripts/sign_catalog.py signs both.
+
+``--only NAME...`` (with ``--ci-digests``) takes only these servers of the CI run and makes every
+other server pending, without its rootfs: the build workflow's catalog job passes the servers
+whose image job passed, whose reports scripts/sign_catalog.py would take and whose review is
+recorded (scripts/ci_results.py), so a server that failed is left out instead of keeping an
+older digest no report of this run vouches for.
 
 ``--check`` exits 1 when catalog.json is not what the metadata and digests give, when an
 entry is invalid, or when digests are pending (unless ``--allow-pending``). With
 ``--axross DIR`` it also loads the catalog with axross's own validator
 (``core.mcp_catalog``, run it with axross's Python) and requires every pinned entry to be
 accepted unchanged and every pending entry to be refused for its missing digest.
-Standard library only.
+``--sandbox-ai DIR`` does the same with sandbox-ai's own reader (``sandbox/mcp.py``:
+``read_catalog``, ``definition_from_entry``, ``validated_image``, and ``mcp_rootfs.validated``
+for rootfs.json), so an entry this repository writes and an entry ``sandbox-ai mcp add`` accepts
+are the same thing. Nothing is pulled or fetched by either check. Standard library only.
 """
 
 from __future__ import annotations
@@ -61,6 +77,8 @@ _DIGEST = re.compile(r"^sha256:[a-f0-9]{64}$")
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 _TARGET = re.compile(r"^/(?:[A-Za-z0-9._-]+|\{name\})(?:/(?:[A-Za-z0-9._-]+|\{name\}))*$")
 _HOST = re.compile(r"^[A-Za-z0-9.-]{1,253}:[0-9]{1,5}$")
+#: sandbox-ai refuses a rootfs archive larger than this (sandbox/mcp_rootfs.py ROOTFS_LIMIT).
+ROOTFS_LIMIT = 2 << 30
 
 ENTRY_KEYS = ("id", "name", "title", "description", "category", "tags", "repository", "page",
               "license", "kind", "image", "tag", "digest", "args", "env", "mounts", "network",
@@ -248,6 +266,99 @@ def build_catalog(servers: list[dict], digests: dict[str, str | None]) -> dict:
     return catalog
 
 
+RELEASES = "https://github.com/c0decave/axross-mcp-hub/releases/download/"
+ROOTFS_KEYS = ("url", "sha256", "size", "entrypoint", "user", "workdir", "env")
+
+
+def validate_rootfs(name: str, meta, digest: str | None) -> dict:
+    """The rootfs entry of NAME (from rootfs-NAME.json), checked: built from the image digest the catalog pins."""
+    where = f"rootfs {name}"
+    if not isinstance(meta, dict):
+        raise CatalogProblem(f"{where}: not an object")
+    if meta.get("image") not in (None, f"{IMAGE_PREFIX}{name}@{digest}"):
+        raise CatalogProblem(f"{where}: built from {meta.get('image')}, not from {IMAGE_PREFIX}{name}@{digest}")
+    url = meta.get("url")
+    if not isinstance(url, str) or not url.startswith(RELEASES) or not url.endswith(f"/rootfs-{name}.tar.gz"):
+        raise CatalogProblem(f"{where}: url must be a release asset of this repository")
+    if not isinstance(meta.get("sha256"), str) or not re.fullmatch(r"[0-9a-f]{64}", meta["sha256"]):
+        raise CatalogProblem(f"{where}: sha256 must be 64 hex digits")
+    # The same rules as sandbox-ai's mcp_rootfs.validated and its ROOTFS_LIMIT: a rootfs this
+    # catalog pins must be one sandbox-ai can fetch, check and run, not one it refuses later.
+    size = meta.get("size")
+    if isinstance(size, bool) or not isinstance(size, int) or not 0 < size <= ROOTFS_LIMIT:
+        raise CatalogProblem(f"{where}: size must be the archive's size in bytes, at most "
+                             f"{ROOTFS_LIMIT >> 30} GiB (sandbox-ai refuses a larger one)")
+    entrypoint = meta.get("entrypoint")
+    if not isinstance(entrypoint, list) or not entrypoint or len(entrypoint) > 32 or not all(
+            isinstance(v, str) and v and "\0" not in v and len(v) < 4096 for v in entrypoint) \
+            or not entrypoint[0].startswith("/"):
+        raise CatalogProblem(f"{where}: entrypoint must be an absolute program and its arguments "
+                             "(at most 32 non-empty texts)")
+    user = meta.get("user")
+    if isinstance(user, bool) or not isinstance(user, int) or not 1 <= user <= 65535:
+        raise CatalogProblem(f"{where}: user must be a UID other than root")
+    workdir = meta.get("workdir", "/tmp")
+    if not isinstance(workdir, str) or not workdir.startswith("/") or ".." in workdir.split("/"):
+        raise CatalogProblem(f"{where}: workdir must be an absolute path")
+    env = meta.get("env", {})
+    if not isinstance(env, dict) or len(env) > 32 or not all(
+            isinstance(k, str) and _ENV_NAME.match(k) and isinstance(v, str) and "\0" not in v and len(v) < 4096
+            for k, v in env.items()):
+        raise CatalogProblem(f"{where}: env must map at most 32 variable names to text")
+    return {k: meta[k] for k in ROOTFS_KEYS if k in meta}
+
+
+def read_ci_rootfs(paths: list[Path]) -> dict[str, dict]:
+    """``rootfs-<name>.json`` files of the build workflow (scripts/rootfs.py), given as files or folders."""
+    files: list[Path] = []
+    for path in paths:
+        files.extend(sorted(path.rglob("rootfs-*.json")) if path.is_dir() else [])
+    out = {}
+    for file in files:
+        data = json.loads(file.read_text(encoding="utf-8"))
+        name = data.get("name") if isinstance(data, dict) else None
+        if not isinstance(name, str) or not _SERVER_NAME.match(name):
+            raise CatalogProblem(f"{file.name}: no valid name")
+        out[name] = data
+    return out
+
+
+def build_rootfs(servers: list[dict], digests: dict, rootfs: dict) -> dict:
+    """rootfs.json: the Bubblewrap form of every server whose image is published and whose rootfs was built."""
+    known = {s["name"] for s in servers}
+    unknown = sorted(set(rootfs) - known)
+    if unknown:
+        raise CatalogProblem(f"rootfs for servers that do not exist: {', '.join(unknown)}")
+    return {"version": 1, "rootfs": {name: validate_rootfs(name, meta, digests.get(name))
+                                     for name, meta in sorted(rootfs.items()) if digests.get(name)}}
+
+
+def build_catalog(servers: list[dict], digests: dict[str, str | None]) -> dict:
+    unknown = sorted(set(digests) - {s["name"] for s in servers})
+    if unknown:
+        raise CatalogProblem(f"digests for servers that do not exist: {', '.join(unknown)}")
+    entries, pending = [], []
+    for server in servers:
+        digest = digests.get(server["name"])
+        source = {**server, "digest": digest} if digest else server
+        entry = {k: source[k] for k in ENTRY_KEYS if k in source}  # axross's key order
+        if not digest:
+            pending.append(server["name"])
+        validate_entry(entry, where=f"catalog entry {server['name']}")
+        entries.append(entry)
+    catalog = {
+        "schema": SCHEMA,
+        "version": VERSION,
+        "title": TITLE,
+        "description": DESCRIPTION if not pending else f"{DESCRIPTION} {PENDING_NOTE}",
+        "state": "pending-digests" if pending else "pinned",
+    }
+    if pending:
+        catalog["pending"] = pending
+    catalog["entries"] = entries
+    return catalog
+
+
 def dump(catalog: dict) -> str:
     return json.dumps(catalog, indent=2, ensure_ascii=False) + "\n"
 
@@ -288,12 +399,89 @@ def axross_check(catalog_path: Path, catalog: dict, axross_dir: Path) -> list[st
     return problems
 
 
+def _load_module(path: Path, name: str):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def sandbox_ai_check(catalog_path: Path, catalog: dict, rootfs: dict, sandbox_ai_dir: Path) -> list[str]:
+    """Problems found when sandbox-ai's own reader takes *catalog_path*: every pinned entry must become a
+    definition its `mcp add` accepts (``read_catalog``, ``definition_from_entry``, ``validated_image``),
+    every pending entry must be refused for its missing digest, and every rootfs must pass
+    ``mcp_rootfs.validated``. Nothing is pulled and nothing is fetched."""
+    import tempfile
+
+    try:
+        mcp = _load_module(sandbox_ai_dir / "sandbox/mcp.py", "sandbox_ai_mcp_for_catalog")
+    except (ImportError, OSError) as exc:
+        return [f"cannot load sandbox-ai's sandbox/mcp.py from {sandbox_ai_dir}: {exc}"]
+    problems: list[str] = []
+    try:
+        entries = mcp.read_catalog(str(catalog_path))
+    except ValueError as exc:
+        return [f"sandbox-ai refuses the whole catalog: {exc}"]
+    by_id = {entry.get("id"): entry for entry in entries}
+    accepted = 0
+    with tempfile.TemporaryDirectory() as folder:
+        for entry in catalog["entries"]:
+            name = entry["name"]
+            got = by_id.get(entry["id"])
+            if got is None:
+                problems.append(f"sandbox-ai did not read the entry {name} ({entry['id']}) at all")
+                continue
+            mounts = [f"{mount['target']}={folder}:ro" for mount in entry.get("mounts", [])]
+            env = [var["name"] for var in entry.get("env", [])]
+            network = "full" if entry["network"] in ("full", "allowlist") else None
+            try:
+                definition = mcp.definition_from_entry(got, mounts=mounts, env=env, network=network)
+            except ValueError as exc:
+                if "digest" in entry:
+                    problems.append(f"sandbox-ai refused the pinned entry {name}: {exc}")
+                elif "digest" not in str(exc):
+                    problems.append(f"sandbox-ai refused {name} for another reason than the missing "
+                                    f"digest: {exc}")
+                continue
+            if "digest" not in entry:
+                problems.append(f"sandbox-ai accepted {name} although the catalog has no digest for it")
+                continue
+            accepted += 1
+            if definition["image"] != f"{entry['image']}@{entry['digest']}":
+                problems.append(f"sandbox-ai would run {definition['image']} for {name}, not "
+                                f"{entry['image']}@{entry['digest']}")
+            if [m["target"] for m in definition["mounts"]] != [m["target"] for m in entry.get("mounts", [])]:
+                problems.append(f"sandbox-ai read the folders of {name} differently: "
+                                f"{[m['target'] for m in definition['mounts']]}")
+            if definition["env"] != env:
+                problems.append(f"sandbox-ai read the variables of {name} differently: {definition['env']}")
+            if entry["network"] == "none" and definition["network"] != "none":
+                problems.append(f"{name}: the catalog says network none, sandbox-ai would give it "
+                                f"{definition['network']}")
+        module = mcp.rootfs_module()
+        for name, meta in sorted(rootfs.get("rootfs", {}).items()):
+            try:
+                module.validated({"path": str(module.rootfs_dir(meta["sha256"])), "sha256": meta["sha256"],
+                                  "entrypoint": meta.get("entrypoint"), "user": meta.get("user", 65534),
+                                  "workdir": meta.get("workdir", "/tmp"), "env": meta.get("env", {})}, name)
+            except (ValueError, KeyError) as exc:
+                problems.append(f"sandbox-ai refuses the rootfs of {name}: {exc}")
+    print(f"sandbox-ai reader: {accepted} pinned entries accepted, "
+          f"{len(catalog['entries']) - accepted} refused for a missing digest, "
+          f"{len(rootfs.get('rootfs', {}))} rootfs checked")
+    return problems
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--root", type=Path, default=ROOT, help="the hub repository")
     parser.add_argument("--digests", type=Path, help="default: ROOT/digests.json")
     parser.add_argument("--ci-digests", type=Path, nargs="+", default=[],
                         help="digest-<name>.json files (or folders) of a CI run")
+    parser.add_argument("--only", nargs="+", metavar="NAME",
+                        help="with --ci-digests: only these servers of the CI run; every other one becomes pending")
     parser.add_argument("--write-digests", action="store_true",
                         help="store the --ci-digests in digests.json")
     parser.add_argument("--out", type=Path, help="default: ROOT/catalog.json")
@@ -302,6 +490,8 @@ def main(argv=None) -> int:
     parser.add_argument("--allow-pending", action="store_true",
                         help="with --check: entries without digest are not a failure")
     parser.add_argument("--axross", type=Path, help="an axross checkout: also run its validator")
+    parser.add_argument("--sandbox-ai", type=Path, dest="sandbox_ai",
+                        help="a sandbox-ai checkout: also read the catalog with its own reader")
     opts = parser.parse_args(argv)
     root = opts.root.resolve()
     digests_path = opts.digests or root / "digests.json"
@@ -309,22 +499,48 @@ def main(argv=None) -> int:
     try:
         servers = load_servers(root)
         digests = load_digests(digests_path)
+        stored = json.loads(digests_path.read_text(encoding="utf-8"))
+        rootfs = dict(stored.get("rootfs") or {})
+        if opts.only and not opts.ci_digests:
+            raise CatalogProblem("--only needs --ci-digests")
         if opts.ci_digests:
-            digests.update(read_ci_digests(opts.ci_digests))
+            new = read_ci_digests(opts.ci_digests)
+            new_rootfs = read_ci_rootfs(opts.ci_digests)
+            if opts.only:
+                only = set(opts.only)
+                unknown = sorted(only - {s["name"] for s in servers})
+                if unknown:
+                    raise CatalogProblem(f"--only: no such server: {', '.join(unknown)}")
+                without = sorted(only - set(new))
+                if without:
+                    raise CatalogProblem(f"--only: the CI run has no digest for {', '.join(without)}")
+                new = {name: digest for name, digest in new.items() if name in only}
+                new_rootfs = {name: meta for name, meta in new_rootfs.items() if name in only}
+                for server in servers:  # left out: pending, not an older digest this run does not vouch for
+                    if server["name"] not in only:
+                        digests[server["name"]] = None
+                        rootfs.pop(server["name"], None)
+            digests.update(new)
+            rootfs = {name: meta for name, meta in rootfs.items() if name not in new}  # a new image, a new rootfs
+            rootfs.update(new_rootfs)
             if opts.write_digests:
-                data = json.loads(digests_path.read_text(encoding="utf-8"))
-                data["images"] = {s["name"]: digests.get(s["name"]) for s in servers}
-                digests_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+                stored["images"] = {s["name"]: digests.get(s["name"]) for s in servers}
+                stored["rootfs"] = rootfs
+                digests_path.write_text(json.dumps(stored, indent=2) + "\n", encoding="utf-8")
         for server in servers:
             digests.setdefault(server["name"], None)
         catalog = build_catalog(servers, digests)
+        rootfs_document = build_rootfs(servers, digests, rootfs)
     except (CatalogProblem, OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     text = dump(catalog)
+    rootfs_text = json.dumps(rootfs_document, indent=2) + "\n"
+    rootfs_out = out.with_name("rootfs.json")
     pending = catalog.get("pending", [])
     if not opts.check:
         out.write_text(text, encoding="utf-8")
+        rootfs_out.write_text(rootfs_text, encoding="utf-8")
         print(f"wrote {out} - {len(catalog['entries'])} entries, "
               + (f"pending digests: {', '.join(pending)}" if pending else "all pinned"))
         return 0
@@ -333,10 +549,15 @@ def main(argv=None) -> int:
     if current != text:
         problems.append(f"{out.name} is not what servers/*/server.json and "
                         f"{digests_path.name} give: run scripts/make_catalog.py")
+    if (rootfs_out.read_text(encoding="utf-8") if rootfs_out.exists() else "") != rootfs_text:
+        problems.append(f"{rootfs_out.name} is not what {digests_path.name} gives: run scripts/make_catalog.py")
     if pending and not opts.allow_pending:
         problems.append(f"digests pending for: {', '.join(pending)}")
     if opts.axross and out.exists():
         problems.extend(axross_check(out, json.loads(current or text), opts.axross.resolve()))
+    if opts.sandbox_ai and out.exists():
+        problems.extend(sandbox_ai_check(out, json.loads(current or text), rootfs_document,
+                                         opts.sandbox_ai.resolve()))
     for problem in problems:
         print(f"FAIL: {problem}", file=sys.stderr)
     if not problems:

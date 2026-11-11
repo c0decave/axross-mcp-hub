@@ -20,7 +20,10 @@ In scope:
 - the Dockerfiles and the published images `ghcr.io/c0decave/axross-mcp-*` (a pinned
   component with a known vulnerability, a wrong user, a missing pin);
 - `scripts/make_catalog.py` and `catalog.json` (anything that could make axross pull an image
-  other than the one reviewed).
+  other than the one reviewed);
+- the signing for sandbox-ai: `scripts/sign_catalog.py`, `scripts/ci_results.py`, `reviews.json`,
+  `rootfs.json` and the `.sig` files (anything that could get a server signed that was not reviewed or
+  did not pass its smoke runs for exactly the pinned digest, see `docs/SIGNING.md`).
 
 Out of scope here (report upstream): vulnerabilities inside the bundled tools themselves -
 radare2, r2mcp, capa, binwalk and its extractors, YARA, mcpcap/scapy, Nmap, nuclei and its

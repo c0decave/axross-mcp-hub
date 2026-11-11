@@ -23,6 +23,17 @@ egress proxy); a target needs ``--target-host ADDR``: an address of this machine
 server container reaches with the full network and that other machines cannot reach (a
 host-only bridge address; with podman's pasta not 127.0.0.1). Standard library only.
 
+``--runner sandbox-ai-podman`` and ``--runner sandbox-ai-bwrap`` (with ``--sandbox-ai DIR``, a
+sandbox-ai checkout) start each server the way sandbox-ai starts it instead, with sandbox-ai's
+own code (``scripts/smoke_test.py``'s ``sandbox_ai_argv``): the image with its ``podman run``
+line, or the image's rootfs (``--rootfs-dir DIR`` with ``rootfs-<name>.tar.gz`` and
+``rootfs-<name>.json`` of ``scripts/rootfs.py``) checked, unpacked and run with bwrap. sandbox-ai
+grants an allowlisted server the full network, so these runners need no ``--axross`` and run the
+live call too. ``--report-dir DIR`` writes each report as ``smoke-<name>-<runner>.json``, the
+files ``scripts/sign_catalog.py`` signs by. ``--call-retries N`` repeats a failed real call up to
+N times (``--call-backoff`` seconds, doubled each time): a public service such as crt.sh fails
+now and then; the refused call is never repeated.
+
 Spec format, per server::
 
     {"name": "<catalog name>",
@@ -313,10 +324,22 @@ def _is_error(message: dict) -> bool:
     return "error" in message or bool(message.get("result", {}).get("isError"))
 
 
+def _rootfs_of(name: str, folder) -> tuple[str, dict]:
+    """(archive, its rootfs-<name>.json) in scripts/rootfs.py's output folder."""
+    if not folder:
+        raise RuntimeError("--runner sandbox-ai-bwrap needs --rootfs-dir DIR (scripts/rootfs.py --out DIR)")
+    archive = Path(folder) / f"rootfs-{name}.tar.gz"
+    meta = json.loads((Path(folder) / f"rootfs-{name}.json").read_text(encoding="utf-8"))
+    if meta.get("name") != name:
+        raise RuntimeError(f"rootfs-{name}.json is of {meta.get('name')!r}")
+    return str(archive), meta
+
+
 def run_one(server: dict, spec: dict, image: str, opts, st) -> dict:
     """Run one server's smoke spec; a report with ``ok``."""
     name = server["name"]
-    report = {"name": name, "image": image, "checks": []}
+    runner = getattr(opts, "runner", "axross")
+    report = {"name": name, "image": image, "runner": runner, "checks": []}
     base = Path(tempfile.mkdtemp(prefix=f"axross-hub-smoke-{name}-"))
     os.chmod(base, 0o755)
     target = proxy = session = None
@@ -332,21 +355,35 @@ def run_one(server: dict, spec: dict, image: str, opts, st) -> dict:
             variables = {"TARGET_HOST": target.host, "TARGET_PORT": str(target.port)}
         network = server["network"]
         hosts = []
-        if isinstance(network, dict):
-            hosts, network = network["allowlist"], "allowlist"
-            if not opts.axross:
-                raise RuntimeError("an allowlist spec needs --axross DIR (axross's egress proxy)")
-            proxy = st.start_proxy(hosts, opts.axross)
-        read_fd, write_fd = os.pipe()
-        os.write(write_fd, st.env_file({}, proxy.port if proxy else None))
-        os.close(write_fd)
         mounts = [(str(folder), mount, False) for mount, folder in folders.items()]
-        argv = st.run_command(f"hubsmoke-{name}", image, network=network, mounts=mounts,
-                              program=opts.engine, env_fd=read_fd, run_id=secrets.token_hex(4),
-                              egress_port=proxy.port if proxy else "")
-        report["argv"] = argv
-        session = st.Session(argv, read_fd)
-        os.close(read_fd)
+        if runner != "axross":
+            # sandbox-ai has no allowlist for image servers: mcp add --network full grants the network.
+            network = "full" if isinstance(network, dict) else network
+            report["network"] = network
+            rootfs = meta = None
+            if runner == "sandbox-ai-bwrap":
+                rootfs, meta = _rootfs_of(name, opts.rootfs_dir)
+            argv, environment, facts = st.sandbox_ai_argv(runner, opts.sandbox_ai, image, network,
+                                                          mounts, {}, rootfs, meta)
+            report.update(facts)
+            report["argv"] = argv
+            session = st.Session(argv, None, environment)
+        else:
+            if isinstance(network, dict):
+                hosts, network = network["allowlist"], "allowlist"
+                if not opts.axross:
+                    raise RuntimeError("an allowlist spec needs --axross DIR (axross's egress proxy)")
+                proxy = st.start_proxy(hosts, opts.axross)
+            report["network"] = network
+            read_fd, write_fd = os.pipe()
+            os.write(write_fd, st.env_file({}, proxy.port if proxy else None))
+            os.close(write_fd)
+            argv = st.run_command(f"hubsmoke-{name}", image, network=network, mounts=mounts,
+                                  program=opts.engine, env_fd=read_fd, run_id=secrets.token_hex(4),
+                                  egress_port=proxy.port if proxy else "")
+            report["argv"] = argv
+            session = st.Session(argv, read_fd)
+            os.close(read_fd)
         timeout = server["timeout_s"]
         init = session.request("initialize", {
             "protocolVersion": st.PROTOCOL_VERSION, "capabilities": {},
@@ -362,22 +399,34 @@ def run_one(server: dict, spec: dict, image: str, opts, st) -> dict:
         ok &= st.check_tools_file(report, names, str(tools_file))
         steps = [("setup", c) for c in server.get("setup", [])]
         steps += [("call", server["call"]), ("refused", server["refused"])]
+        retries = getattr(opts, "call_retries", 0) or 0
         for kind, call in steps:
             args = st.substitute(call.get("args", {}), variables)
-            started = time.monotonic()
-            answer = session.request("tools/call", {"name": call["tool"], "arguments": args},
-                                     timeout)
-            text = st.result_text(answer)
             expect = st.substitute(call.get("expect_substring", ""), variables)
-            if kind == "setup":
-                passed = not _is_error(answer)
-            elif kind == "call":
-                passed = not _is_error(answer) and expect in text
-            else:
-                passed = expect in text
+            started = time.monotonic()
+            attempt = 0
+            while True:
+                attempt += 1
+                answer = session.request("tools/call", {"name": call["tool"], "arguments": args},
+                                         timeout)
+                text = st.result_text(answer)
+                if kind == "setup":
+                    passed = not _is_error(answer)
+                elif kind == "call":
+                    passed = not _is_error(answer) and expect in text
+                else:
+                    passed = expect in text
+                # Only the real call is repeated (a public service failing now and then); a refusal
+                # must come at the first try.
+                if passed or kind != "call" or attempt > retries:
+                    break
+                wait = getattr(opts, "call_backoff", 15.0) * 2 ** (attempt - 1)
+                print(f"{name}: call {call['tool']} failed, retry {attempt} of {retries} in {wait:g} s",
+                      file=sys.stderr, flush=True)
+                time.sleep(wait)
             report["checks"].append({"check": f"{kind} {call['tool']}", "ok": passed,
                                      "expect": expect, "seconds": round(time.monotonic() - started, 2),
-                                     "text": text[:1200]})
+                                     "attempts": attempt, "text": text[:1200]})
             ok &= passed
     except Exception as exc:  # noqa: BLE001 - reported, not hidden
         ok = False
@@ -408,7 +457,22 @@ def main(argv=None) -> int:
     parser.add_argument("--target-host", help="host address targets are published on")
     parser.add_argument("--skip-live-network", action="store_true",
                         help="skip specs whose call reaches a public service")
+    parser.add_argument("--runner", choices=["axross", "sandbox-ai-podman", "sandbox-ai-bwrap"],
+                        default="axross", help="whose run line starts the server (default: axross's)")
+    parser.add_argument("--sandbox-ai", help="a sandbox-ai checkout, for the sandbox-ai runners")
+    parser.add_argument("--rootfs-dir", help="sandbox-ai-bwrap: rootfs-<name>.tar.gz and .json "
+                        "(scripts/rootfs.py --out DIR)")
+    parser.add_argument("--report-dir", type=Path,
+                        help="write each report to DIR/smoke-<name>-<runner>.json")
+    parser.add_argument("--call-retries", type=int, default=0,
+                        help="repeat a failed real call up to N times (default 0)")
+    parser.add_argument("--call-backoff", type=float, default=15.0,
+                        help="seconds before the first repeat, doubled each time (default 15)")
     opts = parser.parse_args(argv)
+    if opts.runner != "axross" and not opts.sandbox_ai:
+        parser.error(f"--runner {opts.runner} needs --sandbox-ai DIR")
+    if not 0 <= opts.call_retries <= 5:
+        parser.error("--call-retries: 0-5")
     spec = json.loads(opts.spec.read_text(encoding="utf-8"))
     catalog = json.loads((ROOT / "catalog.json").read_text(encoding="utf-8"))
     problems = validate(spec, catalog, load_tools(ROOT), ROOT)
@@ -444,6 +508,12 @@ def main(argv=None) -> int:
         report = run_one(server, spec, image, opts, st)
         ok &= report["ok"]
         reports.append(report)
+        if opts.report_dir:
+            opts.report_dir.mkdir(parents=True, exist_ok=True)
+            (opts.report_dir / f"smoke-{server['name']}-{opts.runner}.json").write_text(
+                json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        if not report["ok"] and os.environ.get("GITHUB_ACTIONS") == "true":
+            print(st.annotation(report), flush=True)
         print(f"{server['name']}: {'ok' if report['ok'] else 'FAIL'} "
               + " ".join(f"{c['check']}:{'ok' if c['ok'] else 'FAIL'}" for c in report["checks"])
               + (f" ({report['exception']})" if "exception" in report else ""), file=sys.stderr)

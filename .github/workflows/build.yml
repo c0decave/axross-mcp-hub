@@ -4,18 +4,38 @@ name: build
 # tools/list must offer exactly servers/<name>/tools.json), runs its smoke spec from
 # tests/axross-smoke.json (files, a local target, a real call, a refused call), scans it
 # with Trivy (CRITICAL with a fix available fails the job), pushes
-# it to ghcr.io/c0decave/axross-mcp-<name> and reports the pushed digest. The catalog job
-# turns the digests into catalog.json (an artifact; commit it after checking).
+# it to ghcr.io/c0decave/axross-mcp-<name> and reports the pushed digest. Then the pushed
+# image runs the same smoke spec as sandbox-ai runs it: under Podman with sandbox-ai's own run
+# line (required), and its rootfs (scripts/rootfs.py, published as a release asset) under
+# Bubblewrap with sandbox-ai's mcp_rootfs (optional: a server failing only there is published for
+# Podman alone). The catalog job (main only) takes the servers scripts/ci_results.py finds
+# passed and reviewed (reviews.json); the others stay pending, each named in an annotation. It
+# turns their digests and rootfs into catalog.json and rootfs.json, uploaded with the reports as
+# the artifact "catalog" and the pre-release ci-catalog-RUN. Sign them on your machine with
+# scripts/sign_catalog.py, which refuses unless every published server is reviewed and its
+# reports passed for exactly its digest, then commit catalog.json, rootfs.json, digests.json and
+# the .sig files (docs/SIGNING.md). The repository variable SANDBOX_AI_REF picks sandbox-ai's
+# branch, tag or commit (default main).
 
 on:
   push:
     branches: [main]
     tags: ["v*"]
+    # The commit of a signed catalog (catalog.json, rootfs.json, digests.json, *.sig) builds nothing:
+    # a rebuild would only push new digests the signed catalog does not pin.
+    paths-ignore:
+      - catalog.json
+      - catalog.json.sig
+      - rootfs.json
+      - rootfs.json.sig
+      - digests.json
+      - docs/**
+      - "*.md"
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # the rootfs archives and the ci-catalog pre-release are release assets
   packages: write
 
 concurrency:
@@ -28,6 +48,8 @@ env:
   SOURCE_LABEL: org.opencontainers.image.source=https://github.com/c0decave/axross-mcp-hub
   TRIVY_VERSION: "0.76.1"
   TRIVY_SHA256: c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0
+  SANDBOX_AI_REPOSITORY: c0decave/sandbox-ai
+  SANDBOX_AI_REF: ${{ vars.SANDBOX_AI_REF || 'main' }}
 
 jobs:
   test:
@@ -42,6 +64,26 @@ jobs:
         run: python3 scripts/axross_smoke.py --check
       - name: catalog.json matches the metadata (pending digests allowed)
         run: python3 scripts/make_catalog.py --check --allow-pending
+
+      # The catalog is only worth as much as sandbox-ai's own reader makes of it: check every entry
+      # with sandbox-ai's code before anything is built (no pull, no fetch).
+      - name: sandbox-ai (its catalog reader)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.SANDBOX_AI_REPOSITORY }}
+          ref: ${{ env.SANDBOX_AI_REF }}
+          path: sandbox-ai
+          persist-credentials: false
+      - name: every entry as sandbox-ai reads it
+        run: |
+          for file in sandbox/mcp.py sandbox/mcp_rootfs.py; do
+            if [ ! -f "sandbox-ai/${file}" ]; then
+              echo "::error::${SANDBOX_AI_REPOSITORY}@${SANDBOX_AI_REF} has no ${file}: set the repository variable SANDBOX_AI_REF"
+              exit 1
+            fi
+          done
+          python3 scripts/make_catalog.py --check --allow-pending --sandbox-ai sandbox-ai
+          SANDBOX_AI_CHECKOUT="${GITHUB_WORKSPACE}/sandbox-ai" python3 -m unittest discover -s tests
 
   image:
     needs: test
@@ -142,16 +184,122 @@ jobs:
           echo "${IMAGE}@${DIGEST}"
           echo "| ${{ matrix.server }} | \`${IMAGE}@${DIGEST}\` |" >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      # --- as sandbox-ai runs it: Podman with its run line, Bubblewrap with the rootfs -----------------
+      - name: sandbox-ai (its run lines)
         if: github.event_name != 'pull_request'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          name: digest-${{ matrix.server }}
-          path: digest-${{ matrix.server }}.json
-          if-no-files-found: error
+          repository: ${{ env.SANDBOX_AI_REPOSITORY }}
+          ref: ${{ env.SANDBOX_AI_REF }}
+          path: sandbox-ai
+          persist-credentials: false
+
+      - name: sandbox-ai has signed catalogs and Bubblewrap servers
+        if: github.event_name != 'pull_request'
+        run: |
+          for file in sandbox/mcp.py sandbox/mcp_rootfs.py sandbox/mcp-signers sandbox/release_keys.py; do
+            if [ ! -f "sandbox-ai/${file}" ]; then
+              echo "::error::${SANDBOX_AI_REPOSITORY}@${SANDBOX_AI_REF} has no ${file}: set the repository variable SANDBOX_AI_REF"
+              exit 1
+            fi
+          done
+          grep -q '^def image_command' sandbox-ai/sandbox/mcp.py
+          git -C sandbox-ai log -1 --format='sandbox-ai %H %s'
+
+      - name: Bubblewrap, slirp4netns, pasta
+        if: github.event_name != 'pull_request'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q bubblewrap slirp4netns passt
+          # Ubuntu 24.04 keeps unprivileged user namespaces from bwrap unless this is off.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          bwrap --version
+
+      # The smoke spec of tests/axross-smoke.json with sandbox-ai's own podman run line for the pushed
+      # digest; targets on docker's host-only bridge address. sandbox-ai grants an allowlisted server
+      # the full network, so crtsh's live call runs too (repeated twice when crt.sh fails).
+      - name: Smoke with sandbox-ai under Podman
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ steps.tags.outputs.image }}@${{ steps.push.outputs.digest }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "${GHCR_TOKEN}" | podman login -u "${GITHUB_ACTOR}" --password-stdin "${REGISTRY}"
+          podman pull -q "${IMAGE}"
+          python3 scripts/axross_smoke.py --engine docker --target-host 172.17.0.1 --call-retries 2 \
+            --runner sandbox-ai-podman --sandbox-ai sandbox-ai --report-dir reports \
+            --run ${{ matrix.server }} --image "${{ matrix.server }}=${IMAGE}"
+
+      # Bubblewrap is optional: a server whose rootfs or Bubblewrap smoke fails is published for
+      # Podman alone (its rootfs is left out below), the failure visible as a warning and in its report.
+      - name: Rootfs of the pushed image
+        id: rootfs
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          IMAGE: ${{ steps.tags.outputs.image }}@${{ steps.push.outputs.digest }}
+        run: python3 scripts/rootfs.py --engine podman --image "${IMAGE}" --name ${{ matrix.server }} --out rootfs-out
+
+      - name: Smoke with sandbox-ai under Bubblewrap
+        id: bwrap
+        if: github.event_name != 'pull_request' && steps.rootfs.outcome == 'success'
+        continue-on-error: true
+        env:
+          IMAGE: ${{ steps.tags.outputs.image }}@${{ steps.push.outputs.digest }}
+        run: |
+          python3 scripts/axross_smoke.py --engine docker --target-host 172.17.0.1 --call-retries 2 \
+            --runner sandbox-ai-bwrap --sandbox-ai sandbox-ai --rootfs-dir rootfs-out --report-dir reports \
+            --run ${{ matrix.server }} --image "${{ matrix.server }}=${IMAGE}"
+
+      - name: Leave out a rootfs that failed
+        if: github.event_name != 'pull_request' && steps.bwrap.outcome != 'success'
+        run: |
+          rm -f rootfs-out/rootfs-${{ matrix.server }}.json rootfs-out/rootfs-${{ matrix.server }}.tar.gz
+          echo "::warning title=${{ matrix.server }} without Bubblewrap::its rootfs or its smoke test under Bubblewrap failed (see its annotation); the image is published for Podman only, rootfs.json leaves ${{ matrix.server }} out"
+
+      - name: Publish the rootfs (a release named after its hash)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.bwrap.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sha=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['sha256'][:12])" \
+                rootfs-out/rootfs-${{ matrix.server }}.json)
+          tag="rootfs-${{ matrix.server }}-${sha}"
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "$tag" \
+            --notes "The rootfs of ${{ steps.tags.outputs.image }}@${{ steps.push.outputs.digest }} for Bubblewrap (sandbox-ai mcp add --backend bwrap)." \
+            --target "${GITHUB_SHA}"
+          gh release upload "$tag" rootfs-out/rootfs-${{ matrix.server }}.tar.gz --clobber
+
+      # Written only when every required step above passed (Bubblewrap may fail: then the rootfs is left
+      # out): the catalog job takes no server without it.
+      - name: Result
+        if: github.event_name != 'pull_request'
+        run: |
+          printf '{"name": "%s", "passed": true, "run": "%s", "sha": "%s"}\n' \
+            "${{ matrix.server }}" "${GITHUB_RUN_ID}" "${GITHUB_SHA}" > "result-${{ matrix.server }}.json"
+
+      # Also when a step failed: the reports say why, and the catalog job sees which servers passed.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && github.event_name != 'pull_request'
+        with:
+          name: ci-${{ matrix.server }}
+          path: |
+            result-${{ matrix.server }}.json
+            digest-${{ matrix.server }}.json
+            rootfs-out/rootfs-${{ matrix.server }}.json
+            reports/smoke-${{ matrix.server }}-sandbox-ai-podman.json
+            reports/smoke-${{ matrix.server }}-sandbox-ai-bwrap.json
+          if-no-files-found: warn
+          overwrite: true   # a re-run of the job replaces its artifact
 
   catalog:
-    needs: image
-    if: github.event_name != 'pull_request'
+    needs: [test, image]
+    # Only main publishes the rootfs archives rootfs.json points to: sign the catalog of a main run.
+    # Also when some image jobs failed (not when the run was cancelled or the tests failed): the servers
+    # that passed and are reviewed make the catalog, the others stay pending.
+    if: >-
+      !cancelled() && needs.test.result == 'success'
+      && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -159,13 +307,16 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: digest-*
+          pattern: ci-*
           path: ci-digests
           merge-multiple: true
-      - name: catalog.json with the pushed digests
+      - name: The servers that passed and are reviewed (Podman, and Bubblewrap where the rootfs was kept)
+        run: python3 scripts/ci_results.py ci-digests --out passed.txt
+      - name: catalog.json and rootfs.json with the pushed digests and rootfs of those servers
         run: |
-          python3 scripts/make_catalog.py --ci-digests ci-digests --write-digests
-          python3 scripts/make_catalog.py --check
+          # shellcheck disable=SC2046 # one server name per line, no spaces
+          python3 scripts/make_catalog.py --ci-digests ci-digests --only $(cat passed.txt) --write-digests
+          python3 scripts/make_catalog.py --check --allow-pending
           cat ci-digests/digest-*.json
           { echo '### digests.json'; echo '```json'; cat digests.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -173,5 +324,25 @@ jobs:
           name: catalog
           path: |
             catalog.json
+            rootfs.json
             digests.json
+            ci-digests/**/smoke-*.json
           if-no-files-found: error
+      # The same files as a pre-release (ci-catalog-RUN, kept only for the newest run): a release asset is
+      # reachable from where the catalog is signed when the artifact's storage is not (a sandbox whose
+      # allow-list has GitHub but not its blob storage). Nothing in them is secret: they go into the
+      # repository once signed.
+      - name: The catalog as a pre-release for signing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          tar -czf ci-digests.tar.gz ci-digests
+          tag="ci-catalog-$RUN_ID"
+          gh release create "$tag" --prerelease --title "$tag" --target "$GITHUB_SHA" \
+            --notes "Unsigned catalog of CI run $RUN_ID, for scripts/sign_catalog.py (docs/SIGNING.md)." \
+            catalog.json rootfs.json digests.json ci-digests.tar.gz
+          # older ones go (only the newest run is signed)
+          gh release list --limit 100 --json tagName -q '.[].tagName' | grep '^ci-catalog-' | grep -vx "$tag" \
+            | while read -r old; do gh release delete "$old" --yes --cleanup-tag || true; done
