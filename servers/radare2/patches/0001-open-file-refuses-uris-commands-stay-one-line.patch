@@ -1,0 +1,27 @@
+--- a/src/r2api.inc.c
++++ b/src/r2api.inc.c
+@@ -79,7 +79,8 @@
+ 
+ static char *r2_cmd_filter(const char *cmd, bool *changed) {
+ 	char *res = r_str_trim_dup (cmd);
+-	char fchars[] = "|>`";
++	/* a newline (or CR) would start a new radare2 command line */
++	char fchars[] = "|>`\n\r";
+ 	*changed = false;
+ 	if (*res == '!') {
+ 		*changed = true;
+@@ -153,6 +154,14 @@
+ 		filepath = filepath + strlen ("file://");
+ 	}
+ 	bool is_uri = strstr (filepath, "://") != NULL;
++	/* With -s a file is a local path under the sandbox and nothing else: a URI picks one of
++	 * radare2's io plugins (r2pipe:// runs a shell command, dbg:// starts a program,
++	 * nocache:// or gzip:// read any file), skips the path check below and is opened while
++	 * radare2's own sandbox is switched off for the open. */
++	if (is_uri && R_STR_ISNOTEMPTY (ss->sandbox)) {
++		R_LOG_ERROR ("URIs are not allowed in sandbox mode");
++		return false;
++	}
+ 	// Filesystem security checks only apply to local paths, not URI schemes
+ 	if (!is_uri) {
+ 		const char *err = r2mcp_sandbox_check (ss, filepath);

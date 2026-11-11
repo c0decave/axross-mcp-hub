@@ -57,6 +57,17 @@ def load_sandbox_ai():
     return mcp
 
 
+def unreview(root: Path, name: str) -> None:
+    """Mark NAME not reviewed in the reviews.json under ROOT (a copy): every server of this repository is reviewed,
+    the gate is tested with one taken back."""
+    path = root / "reviews.json"
+    reviews = json.loads(path.read_text())
+    review = reviews["servers"][name]
+    review.pop("files", None)
+    review.update(reviewed=False, missing="a record that every shipped file was read in full (test)")
+    path.write_text(json.dumps(reviews, indent=2) + "\n")
+
+
 def report_of(name, runner, image, network="none", **changes):
     """A report as scripts/axross_smoke.py --report-dir writes it."""
     report = {"name": name, "image": image, "runner": runner, "network": network, "ok": True,
@@ -216,6 +227,7 @@ class ReviewGate(HubCopy):
     """Only servers whose shipped MCP code we reviewed completely are signed, and only as reviewed."""
 
     def test_a_server_not_reviewed_is_never_signed(self):
+        unreview(self.root, "mcpcap")
         mcpcap = "ghcr.io/c0decave/axross-mcp-mcpcap@" + DIGEST
         self.publish({"yara": DIGEST, "mcpcap": DIGEST}, {})
         self.report("sandbox-ai-podman")
@@ -242,6 +254,17 @@ class ReviewGate(HubCopy):
         self.assertEqual(sign.main(["--root", str(self.root), "--record-review", "yara"]), 0)
         self.assertEqual(self.run_sign(), 0)
 
+    def test_a_changed_patch_is_a_changed_shipped_file(self):
+        """Upstream code fetched at a pinned commit and patched here: the patches are part of what was reviewed."""
+        self.assertEqual(sign.review_problems(self.root, "radare2"), [])
+        patch = next((self.root / "servers/radare2/patches").glob("*.patch"))
+        patch.write_text(patch.read_text() + "\n")
+        problems = sign.review_problems(self.root, "radare2")
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn(f"patches/{patch.name} changed since its review", problems[0])
+        (self.root / "servers/radare2/patches/0002-new.patch").write_text("")
+        self.assertIn("patches/0002-new.patch", sign.review_problems(self.root, "radare2")[0], "a new patch counts")
+
     def test_without_reviews_json_nothing_is_signed(self):
         self.report("sandbox-ai-podman")
         self.report("sandbox-ai-bwrap")
@@ -265,7 +288,12 @@ class TheReviewsOfThisRepository(unittest.TestCase):
             if review["reviewed"]:
                 self.assertEqual(sorted(review["files"]), sorted(sign.shipped_files(ROOT, name)),
                                  f"{name}: the review covers every shipped file")
-                self.assertIn("src/server.py", review["files"], name)
+                self.assertIn("Dockerfile", review["files"], name)
+                if (ROOT / "servers" / name / "src").is_dir():
+                    self.assertIn("src/server.py", review["files"], name)
+                else:  # MCP code fetched upstream at the commit the Dockerfile pins, patched by patches/
+                    self.assertRegex((ROOT / "servers" / name / "Dockerfile").read_text(),
+                                     r"(?m)^ARG \w*COMMIT=[0-9a-f]{40}$", name)
             else:
                 self.assertTrue(review.get("missing"), f"{name}: why it is not reviewed")
                 self.assertNotIn("files", review, name)
@@ -279,6 +307,9 @@ class CiResults(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp())
         self.folder = self.tmp / "ci-digests"
         self.folder.mkdir()
+        self.root = self.tmp / "hub"  # a copy in which mcpcap is not reviewed
+        shutil.copytree(ROOT, self.root, ignore=shutil.ignore_patterns(".git", "__pycache__", "sandbox-ai"))
+        unreview(self.root, "mcpcap")
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
@@ -304,14 +335,16 @@ class CiResults(unittest.TestCase):
         self.job("tshark", podman=False)
         self.job("mcpcap", bwrap=True)                    # passed, not reviewed
         out = self.tmp / "passed.txt"
-        self.assertEqual(ci.main([str(self.folder), "--out", str(out)]), 0)
+        self.assertEqual(ci.main([str(self.folder), "--root", str(self.root), "--out", str(out)]), 0)
         self.assertEqual(out.read_text().split(), ["capa", "yara"])
-        self.assertTrue(ci.server_result(self.folder, "mcpcap", "none")[0].startswith("not reviewed completely"))
-        self.assertEqual(ci.server_result(self.folder, "yara", "none"), [])
+        self.assertTrue(ci.server_result(self.folder, "mcpcap", "none", self.root)[0]
+                        .startswith("not reviewed completely"))
+        self.assertEqual(ci.server_result(self.folder, "yara", "none", self.root), [])
 
     def test_no_server_no_catalog(self):
         self.job("mcpcap")
-        self.assertEqual(ci.main([str(self.folder), "--out", str(self.tmp / "passed.txt")]), 1)
+        self.assertEqual(ci.main([str(self.folder), "--root", str(self.root), "--out", str(self.tmp / "passed.txt")]),
+                         1)
 
 
 class OnlyTheServersThatPassed(unittest.TestCase):

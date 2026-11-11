@@ -1,6 +1,7 @@
 {
   "tools": [
     "analyze",
+    "calculate",
     "close_file",
     "decompile_function",
     "disassemble",
@@ -29,7 +30,6 @@
     "set_function_prototype",
     "show_function_details",
     "show_info",
-    "sql",
     "use_decompiler",
     "xrefs_to"
   ]

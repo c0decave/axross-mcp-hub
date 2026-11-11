@@ -26,8 +26,13 @@ RUN cd /src/radare2 \
 ENV PATH=/opt/radare2/bin:$PATH \
     PKG_CONFIG_PATH=/opt/radare2/lib/pkgconfig \
     LD_LIBRARY_PATH=/opt/radare2/lib
+# r2mcp with this repository's patch (patches/, see PROVENANCE.md): open_file takes no URI under -s,
+# and no command r2mcp builds can carry a second line. The patched file must be exactly the reviewed one.
+COPY patches/ /patches/
 RUN fetch-commit https://github.com/radareorg/radare2-mcp.git /src/r2mcp "$R2MCP_COMMIT" \
  && cd /src/r2mcp \
+ && for p in /patches/*.patch; do patch -p1 --forward --fuzz=0 --no-backup-if-mismatch < "$p" || exit 1; done \
+ && echo "a96fcc518cfddd4f612587bd9fc45d1b58b2519ca9be3f6477dbca1102f0b120  src/r2api.inc.c" | sha256sum --check --strict \
  && ./configure --prefix=/opt/radare2 \
  && make -j"$(nproc)" \
  && install -m 0755 src/r2mcp /opt/radare2/bin/r2mcp \
@@ -48,7 +53,42 @@ ENV HOME=/tmp \
     PATH=/opt/radare2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 USER 10001:10001
 WORKDIR /work
-# -s /work : open_file only accepts files under /work (the folder the user mounts)
+# -s /work : open_file only accepts files under /work (the folder the user mounts), no URI (patch 0001)
 # -g none  : radare2's own sandbox (cfg.sandbox) allows no exec, socket, network or disk writes
-# no -r    : the raw run_command / run_javascript tools stay off
-ENTRYPOINT ["/opt/radare2/bin/r2mcp", "-s", "/work", "-g", "none"]
+# -N       : no MCP prompts (r2mcp would load *.r2ai.md from ./prompts, i.e. from /work)
+# -e ...   : exactly these 32 tools (tools.json): one page of tools/list; the debugger, search, hexdump
+#            and sql tools r2mcp would also accept are refused
+# no -r    : the raw run_command / run_javascript / run_script tools stay off
+ENTRYPOINT ["/opt/radare2/bin/r2mcp", "-s", "/work", "-g", "none", "-N", \
+            "-e", "analyze", \
+            "-e", "calculate", \
+            "-e", "close_file", \
+            "-e", "decompile_function", \
+            "-e", "disassemble", \
+            "-e", "disassemble_function", \
+            "-e", "get_current_address", \
+            "-e", "get_function_prototype", \
+            "-e", "list_all_strings", \
+            "-e", "list_classes", \
+            "-e", "list_decompilers", \
+            "-e", "list_entrypoints", \
+            "-e", "list_exports", \
+            "-e", "list_files", \
+            "-e", "list_functions", \
+            "-e", "list_functions_tree", \
+            "-e", "list_imports", \
+            "-e", "list_libraries", \
+            "-e", "list_memory_maps", \
+            "-e", "list_methods", \
+            "-e", "list_sections", \
+            "-e", "list_strings", \
+            "-e", "list_symbols", \
+            "-e", "open_file", \
+            "-e", "rename_flag", \
+            "-e", "rename_function", \
+            "-e", "set_comment", \
+            "-e", "set_function_prototype", \
+            "-e", "show_function_details", \
+            "-e", "show_info", \
+            "-e", "use_decompiler", \
+            "-e", "xrefs_to"]

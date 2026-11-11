@@ -94,10 +94,14 @@
       }
     },
     "mcpcap": {
-      "reviewed": false,
+      "reviewed": true,
       "record": "servers/mcpcap/PROVENANCE.md",
-      "mcp_code": "mcpcap 0.10.0 (github.com/mcpcap/mcpcap at 0b7af6b2), its whole src/mcpcap package (13 modules, 3,049 lines of Python), fetched at build time and shipped unpatched, on fastmcp 3.2.0",
-      "missing": "a record that every shipped module was read in full for backdoors and bad code: the record lists the tools and checked behaviour (no subprocess, shell or eval) but no file-by-file review and no finding on backdoors; its findings are not handled either (any *.pcap path in the container is read, not only /work; a URL is downloaded when the network is granted)"
+      "mcp_code": "mcpcap 0.10.0 (github.com/mcpcap/mcpcap at 0b7af6b2), its whole src/mcpcap package (13 modules, 3,049 lines of Python), fetched at build time at the pinned commit and patched (patches/0001: only files under /work, no URL download; the patched base.py pinned by SHA-256 in the Dockerfile), on fastmcp 3.2.0; every module read in full, file by file with SHA-256, findings and the patch in the record",
+      "files": {
+        "Dockerfile": "1092a9569ed38b45bc39886d90b2647f2336f6df74c37d5cebe839ed223ff31b",
+        "requirements.txt": "54d71e135c4a0fd7240339df5a577254b947d2f7709871c31fb30d6b50529601",
+        "patches/0001-only-files-under-work-no-urls.patch": "57c81e05edc68c6d8f3c54fc2e25365e52e0ee3e275d666637925a7dc4f39b21"
+      }
     },
     "nmap": {
       "reviewed": true,
@@ -120,10 +124,13 @@
       }
     },
     "radare2": {
-      "reviewed": false,
+      "reviewed": true,
       "record": "servers/radare2/PROVENANCE.md",
-      "mcp_code": "r2mcp 1.9.0 (github.com/radareorg/radare2-mcp at 562c0cf2), 24 C source files (about 6,100 lines), fetched and built at build time, shipped unpatched",
-      "missing": "a record that r2mcp's sources were read in full for backdoors and bad code: the record shows how tool arguments reach radare2, which tools stay off and that -s /work and -g none hold (with a negative control), but no file-by-file review and no finding on backdoors"
+      "mcp_code": "r2mcp 1.9.0 (github.com/radareorg/radare2-mcp at 562c0cf2), all 24 files of src/ (6,202 lines of C) plus svc/ and the build files, fetched and built at build time at the pinned commit and patched (patches/0001: open_file takes no URI under -s, no command r2mcp builds has a second line; the patched r2api.inc.c pinned by SHA-256 in the Dockerfile), started with -N and a -e allowlist of the 32 tools of tools.json; every file read in full, file by file with SHA-256, findings and the patch in the record",
+      "files": {
+        "Dockerfile": "fe2d34622759f01f4400da11da1486eb2aa8b8136f7edac8edab18d3d6db7a29",
+        "patches/0001-open-file-refuses-uris-commands-stay-one-line.patch": "1e5304824804205b6d321e8ae83ab515a1408fdbb1f350ec01a850295cd35e85"
+      }
     },
     "sleuthkit": {
       "reviewed": true,

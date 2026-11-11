@@ -9,6 +9,7 @@
     {"tool": "list_functions", "arguments": {}, "expect": "check_password"},
     {"tool": "list_strings", "arguments": {}, "expect": "MCPHUB-TEST-MARKER"},
     {"tool": "decompile_function", "arguments": {"address": "sym.check_password"}, "expect": "hunter2"},
-    {"tool": "open_file", "arguments": {"file_path": "/etc/passwd"}, "expect": "Failed to open file", "expect_error": true}
+    {"tool": "open_file", "arguments": {"file_path": "/etc/passwd"}, "expect": "Failed to open file", "expect_error": true},
+    {"tool": "open_file", "arguments": {"file_path": "nocache:///etc/passwd"}, "expect": "Failed to open file", "expect_error": true}
   ]
 }

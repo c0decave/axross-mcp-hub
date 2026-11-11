@@ -9,7 +9,7 @@ was reviewed completely by us and works with sandbox-ai, for exactly the image d
 Before it signs, for every entry with a digest it requires
 
 - its review (reviews.json): ``"reviewed": true``, its record (servers/<name>/PROVENANCE.md) there, and the
-  files that decide what the image ships (Dockerfile, requirements*.txt, src/) exactly the ones reviewed, by
+  files that decide what the image ships (Dockerfile, requirements*.txt, src/, patches/) exactly the ones reviewed, by
   SHA-256. Only servers whose shipped MCP server code we reviewed completely ourselves are signed; a server
   changed since its review is not signed until the change is reviewed and recorded (--record-review);
 - in DIR or a folder below it (the "catalog" artifact of the build workflow keeps them in ci-digests/;
@@ -57,11 +57,12 @@ NETWORK_ORDER = {"none": 0, "allowlist": 1, "full": 1}
 
 def shipped_files(root: Path, name: str) -> dict[str, str]:
     """{path below servers/NAME: sha256} of the files that decide what NAME's image ships: its Dockerfile (base,
-    pinned upstream commits and packages), requirements*.txt (the hash-locked Python packages) and src/ (the
-    MCP server code)."""
+    pinned upstream commits and packages), requirements*.txt (the hash-locked Python packages), src/ (the
+    MCP server code) and patches/ (this repository's changes to upstream code fetched at a pinned commit)."""
     folder = root / "servers" / name
     paths = [folder / "Dockerfile", *sorted(folder.glob("requirements*.txt")),
-             *sorted(p for p in (folder / "src").rglob("*") if p.is_file() and "__pycache__" not in p.parts)]
+             *(p for sub in ("src", "patches")
+               for p in sorted((folder / sub).rglob("*")) if p.is_file() and "__pycache__" not in p.parts)]
     return {p.relative_to(folder).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in paths if p.is_file()}
 

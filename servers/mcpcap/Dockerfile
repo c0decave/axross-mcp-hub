@@ -1,16 +1,21 @@
-# mcpcap (PCAP analysis MCP server, mcpcap/mcpcap) at a pinned commit, MCP over stdio. Unpatched.
+# mcpcap (PCAP analysis MCP server, mcpcap/mcpcap) at a pinned commit, MCP over stdio, with this
+# repository's patch (patches/, see PROVENANCE.md): only files under /work are read, no URL is downloaded.
 ARG DEBIAN_IMAGE=docker.io/library/debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad
 
 FROM ${DEBIAN_IMAGE} AS fetch
 # mcpcap v0.10.0 (the commit of its tag)
 ARG MCPCAP_COMMIT=0b7af6b29f25dd09b949c50f7a69bc493b84c2bf
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates git \
+ && apt-get install -y --no-install-recommends ca-certificates git patch \
  && rm -rf /var/lib/apt/lists/*
+COPY patches/ /patches/
+# The patched module must be exactly the reviewed one.
 RUN git init -q /src && cd /src \
  && git remote add origin https://github.com/mcpcap/mcpcap.git \
  && git fetch -q --depth 1 origin "$MCPCAP_COMMIT" && git checkout -q FETCH_HEAD \
  && test "$(git rev-parse HEAD)" = "$MCPCAP_COMMIT" \
+ && for p in /patches/*.patch; do patch -p1 --forward --fuzz=0 --no-backup-if-mismatch < "$p" || exit 1; done \
+ && echo "3117917211e39fa387600735858f1728ecc511020ca69ea04e0633e7a16d771b  src/mcpcap/modules/base.py" | sha256sum --check --strict \
  && mkdir -p /opt/mcpcap/src && cp -r src/mcpcap /opt/mcpcap/src/ && cp LICENSE /opt/mcpcap/ \
  && printf 'version = "0.10.0"\n__version__ = version\n' > /opt/mcpcap/src/mcpcap/_version.py
 

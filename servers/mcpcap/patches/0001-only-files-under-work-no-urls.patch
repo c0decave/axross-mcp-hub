@@ -1,0 +1,39 @@
+--- a/src/mcpcap/modules/base.py
++++ b/src/mcpcap/modules/base.py
+@@ -8,6 +8,10 @@
+ 
+ from ..core.config import Config
+ 
++#: Local patch: the only folder capture files are read from (the one the user mounts). No URL is
++#: downloaded and no path whose real location lies outside it is read.
++READ_ROOT = "/work"
++
+ 
+ class BaseModule(ABC):
+     """Base class for protocol analysis modules."""
+@@ -56,11 +60,20 @@
+         Returns:
+             A structured dictionary containing packet analysis results
+         """
+-        # Check if this is a remote URL or local file
+-        if pcap_file.startswith(("http://", "https://")):
+-            return self._handle_remote_analysis(pcap_file, analyzer=analyzer)
+-        else:
+-            return self._handle_local_analysis(pcap_file, analyzer=analyzer)
++        # Local patch: no URL is downloaded, only files under READ_ROOT are read (symlinks
++        # resolved first, so nothing outside it is even checked for existence).
++        if "://" in pcap_file:
++            return {
++                "error": f"URLs are refused: only capture files under {READ_ROOT} are read ('{pcap_file}')",
++                "pcap_file": pcap_file,
++            }
++        resolved = os.path.realpath(pcap_file)
++        if os.path.commonpath([resolved, READ_ROOT]) != READ_ROOT:
++            return {
++                "error": f"File '{pcap_file}' is outside {READ_ROOT}: only capture files in the folder mounted at {READ_ROOT} are read",
++                "pcap_file": pcap_file,
++            }
++        return self._handle_local_analysis(resolved, analyzer=analyzer)
+ 
+     def _handle_remote_analysis(
+         self,

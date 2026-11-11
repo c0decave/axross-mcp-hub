@@ -349,7 +349,7 @@
     "args": {
      "pcap_file": "/etc/passwd"
     },
-    "expect_substring": "is not a supported PCAP file"
+    "expect_substring": "is outside /work"
    },
    "timeout_s": 120
   },
@@ -455,7 +455,7 @@
    "refused": {
     "tool": "open_file",
     "args": {
-     "file_path": "/etc/passwd"
+     "file_path": "nocache:///etc/passwd"
     },
     "expect_substring": "Failed to open file"
    },

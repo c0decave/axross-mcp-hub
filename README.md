@@ -96,20 +96,22 @@ Every CI run of `main` checks both and leaves the other servers pending;
 `scripts/sign_catalog.py` refuses to sign otherwise. The steps are in
 [`docs/SIGNING.md`](docs/SIGNING.md).
 
-### Not signed for sandbox-ai, and why
+### Reviewed last: radare2 and mcpcap
 
-Their shipped MCP code ships unpatched from upstream and has no record of a complete review yet.
-Until it has one they stay pending in the signed catalog - offered neither by sandbox-ai nor,
-since both read the one file, by axross:
+Their MCP code is fetched from upstream at a pinned commit; both were reviewed file by file
+(2026-11-11) and are patched here (`servers/<name>/patches/`, the patched file pinned by SHA-256 in
+the Dockerfile):
 
-- **mcpcap** - mcpcap 0.10.0's whole `src/mcpcap` package (13 modules, 3,049 lines of Python on
-  fastmcp 3.2.0). Its record lists the tools and the checked behaviour (no subprocess, shell or
-  `eval`), not a file-by-file review or a finding on backdoors; two findings are not handled
-  either: any `*.pcap` path in the container is read (not only `/work`), and a URL is downloaded
-  when the network is granted.
-- **radare2** - r2mcp 1.9.0 (24 C source files, about 6,100 lines). Its record shows how tool
-  arguments reach radare2, which tools stay off and that `-s /work` and `-g none` hold (with a
-  negative control), but not a file-by-file review of r2mcp or a finding on backdoors.
+- **radare2** - r2mcp 1.9.0 (all 24 files of `src/`, 6,202 lines of C). Upstream's `open_file`
+  took any URI past `-s /work` with radare2's sandbox off for the open (`r2pipe://` ran a shell
+  command, `nocache://` read any file); the patch refuses URIs and keeps every command r2mcp builds
+  on one line; the entrypoint offers exactly the 32 tools of `tools.json` (`-e`) and no prompts
+  (`-N`).
+- **mcpcap** - mcpcap 0.10.0 (13 modules, 3,049 lines of Python on fastmcp 3.2.0). The patch reads
+  only files under `/work` (upstream: any `*.pcap` path) and downloads no URL.
+
+Until a CI run has built the patched images, their digests in `catalog.json` are the earlier,
+unpatched builds, which the signed catalog does not vouch for.
 
 ## Security model
 
@@ -144,6 +146,7 @@ servers/<name>/
   Dockerfile        pinned base, pinned tool versions, non-root user, MCP over stdio
   server.json       the catalog entry (without digest)
   src/              the MCP server source (patched upstream code or own code)
+  patches/          changes to upstream code fetched at a pinned commit (radare2, mcpcap)
   requirements.*    Python dependencies: .in (direct) and .txt (hash-locked)
   PROVENANCE.md     upstream, commit, licences, audit, patch as diff
   LICENSES/         licence texts of the server and the bundled tools

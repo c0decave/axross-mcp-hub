@@ -44,7 +44,8 @@ server of `servers/`:
 
 - `"reviewed": true` - the record (`PROVENANCE.md`), what MCP code ships (`mcp_code`) and `files`: the SHA-256 of
   everything that decides what the image ships (`Dockerfile`: base and pinned upstream commits and packages;
-  `requirements*.txt`: the hash-locked Python packages; `src/`: the MCP server). A server whose files changed
+  `requirements*.txt`: the hash-locked Python packages; `src/`: the MCP server; `patches/`: changes to upstream
+  code fetched at a pinned commit). A server whose files changed
   since its review is neither taken into a CI catalog nor signed. After reviewing the change (and updating its
   `PROVENANCE.md`), record it:
 
@@ -57,7 +58,8 @@ server of `servers/`:
   that no backdoor was found), then set `"reviewed": true` with its record in the same commit and run
   `--record-review NAME`. `--record-review` never marks a server reviewed on its own.
 
-Not reviewed completely at the moment: **mcpcap** and **radare2** (see `reviews.json` and the README).
+Every server of `servers/` is reviewed at the moment; the last were **radare2** and **mcpcap** (2026-11-11,
+patched; see their `PROVENANCE.md`).
 
 ## What the CI run produces
 
